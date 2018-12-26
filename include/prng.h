@@ -17,10 +17,6 @@ typedef struct prng_s prng_t;
 extern prng_t *prng_create( const uint32_t seed );
 extern void prng_destroy( prng_t *P );
 
-/* They will be initialised with seeds generated in a PRNG sequence from the supplied seed */
-extern prng_t *prng_create_array( const unsigned nobj, const uint32_t master_seed );
-extern void prng_destroy_array( prng_t *P );
-
 /* Get the next pseudo-random number in the sequence */
 extern uint32_t prng_random( prng_t *P );
 
