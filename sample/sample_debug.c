@@ -1,7 +1,6 @@
 /*------------------------------------------------------------------------------------------------*/
-/* Pseudo-random number generator:
- * Generate useful random number sequences that are repeatable based on a seed value.
- * Support multiple concurrent random number sequences. */
+/* Generation of a pseudo-random sample object.
+ * Create an object with randomised contents that can be validated using a seed value */
 /* Begun 2018-2019, StackHPC Ltd */
 
 #include <stdio.h>
