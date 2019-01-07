@@ -4,7 +4,7 @@ CPPFLAGS = -Iinclude
 LDFLAGS =
 LIBS = -lpthread -lm
 
-PRNG_SRCS = prng/prng.c prng/prng_debug.c
+PRNG_SRCS = prng/prng.c prng/prng_debug.c prng/prng_xorshift.c
 PRNG_OBJS = $(PRNG_SRCS:%.c=%.o)
 
 SAMPLE_SRCS = sample/sample.c sample/sample_debug.c
