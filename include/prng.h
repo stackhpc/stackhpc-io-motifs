@@ -21,8 +21,16 @@ extern void prng_destroy( prng_t *P );
 extern prng_t *prng_create_array( const unsigned nobj, const uint32_t master_seed );
 extern void prng_destroy_array( prng_t *P );
 
+/* Initialise and finalise a pre-allocated PRNG object */
+/* Initialise can be used to reset a PRNG to a seed value */
+extern prng_t *prng_init( prng_t *P, const uint32_t seed );
+extern void prng_fini( prng_t *P );
+
 /* Get the next pseudo-random number in the sequence */
-extern uint32_t prng_random( prng_t *P );
+extern uint32_t prng_next( prng_t *P );
+
+/* Retrieve the next pseudo-random number without advancing the sequence */
+extern uint32_t prng_peek( prng_t *P );
 
 /* Select an implementation of PRNG
  * NOTE: this cannot be done while PRNG objects are in use */

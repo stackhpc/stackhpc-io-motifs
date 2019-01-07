@@ -5,7 +5,6 @@
 /* Begun 2018-2019, StackHPC Ltd */
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "utils.h"
 #include "prng.h"
@@ -60,8 +59,27 @@ void prng_destroy( prng_t *P )
     PRNG->prng_destroy( P );
 }
 
-/* Get the next pseudo-random number in the sequence */
-uint32_t prng_random( prng_t *P )
+
+/* Initialise and finalise a pre-allocated PRNG object */
+/* Initialise can be used to reset a PRNG to a seed value */
+prng_t *prng_init( prng_t *P, const uint32_t seed )
 {
-    return PRNG->prng_random( P );
+    return PRNG->prng_init( P, seed );
+}
+
+void prng_fini( prng_t *P )
+{
+    PRNG->prng_fini( P );
+}
+
+/* Get the next pseudo-random number in the sequence */
+uint32_t prng_next( prng_t *P )
+{
+    return PRNG->prng_next( P );
+}
+
+/* Get the next pseudo-random number without advancing the sequence */
+uint32_t prng_peek( prng_t *P )
+{
+    return PRNG->prng_peek( P );
 }
