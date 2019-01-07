@@ -61,7 +61,7 @@ static void prng_debug_destroy( prng_t *P )
 }
 
 /* Get the next pseudo-random number in the sequence */
-static uint32_t prng_debug_get( prng_t *P )
+static uint32_t prng_debug_next( prng_t *P )
 {
     return P->seq++;
 }
@@ -82,6 +82,6 @@ prng_driver_t prng_debug =
     .prng_fini = prng_debug_fini,
     .prng_create_array = prng_debug_create_array,
     .prng_destroy_array = prng_debug_destroy_array,
-    .prng_get = prng_debug_get,
+    .prng_next = prng_debug_next,
     .prng_peek = prng_debug_peek,
 };

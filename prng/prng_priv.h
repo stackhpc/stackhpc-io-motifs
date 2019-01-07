@@ -21,7 +21,7 @@ typedef struct
     void (*prng_destroy_array)( prng_t *P );
 
     /* Get the next pseudo-random number in the sequence */
-    uint32_t (*prng_get)( prng_t *P );
+    uint32_t (*prng_next)( prng_t *P );
     uint32_t (*prng_peek)( prng_t *P );
 
 } prng_driver_t;

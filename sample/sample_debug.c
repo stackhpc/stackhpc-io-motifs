@@ -29,7 +29,7 @@ struct sample_s
 
 static size_t sample_debug_len_calc( prng_t *P )
 {
-    return prng_get(P) % (sample_debug_len_max - sample_debug_len_min) + sample_debug_len_min;
+    return prng_next(P) % (sample_debug_len_max - sample_debug_len_min) + sample_debug_len_min;
 }
 
 
@@ -46,11 +46,11 @@ static sample_t *sample_debug_init( sample_t *S, prng_t *P )
     const unsigned remain = S->len % sizeof(uint32_t);
 
     for( unsigned i=0; i < whole_words; i++ )
-        S->data[i] = prng_get( P );
+        S->data[i] = prng_next( P );
 
     /* Write a final word if there was a non-zero byte remainder */
     /* NOTE: we depend on sample_debug_len_max being a unit number of uint32_t words */
-    if( remain ) S->data[whole_words] = prng_get( P );
+    if( remain ) S->data[whole_words] = prng_next( P );
 
     return S;
 }
@@ -71,7 +71,7 @@ static bool sample_debug_valid( sample_t *S, prng_t *P )
 
     for( unsigned i=0; i < whole_words; i++ )
     {
-        const uint32_t check_data = prng_get( P );
+        const uint32_t check_data = prng_next( P );
         if( check_data != S->data[i] )
         {
             fprintf( stderr, "Data mismatch at word %u: Wanted %08x got %08x\n", i, check_data, S->data[i] );
@@ -86,7 +86,7 @@ static bool sample_debug_valid( sample_t *S, prng_t *P )
     {
         /* We can't use the same method as in buffer init: overspill space will not be read in */
         /* Use memcmp instead */
-        const uint32_t final_word = prng_get( P );
+        const uint32_t final_word = prng_next( P );
         const void *check_remain = (const void *)&final_word;
 
         if( memcmp(check_remain, (const void *)(S->data + whole_words), remain ) != 0 )

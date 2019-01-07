@@ -73,9 +73,9 @@ void prng_fini( prng_t *P )
 }
 
 /* Get the next pseudo-random number in the sequence */
-uint32_t prng_get( prng_t *P )
+uint32_t prng_next( prng_t *P )
 {
-    return PRNG->prng_get( P );
+    return PRNG->prng_next( P );
 }
 
 /* Get the next pseudo-random number without advancing the sequence */

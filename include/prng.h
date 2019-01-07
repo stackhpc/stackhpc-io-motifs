@@ -27,7 +27,7 @@ extern prng_t *prng_init( prng_t *P, const uint32_t seed );
 extern void prng_fini( prng_t *P );
 
 /* Get the next pseudo-random number in the sequence */
-extern uint32_t prng_get( prng_t *P );
+extern uint32_t prng_next( prng_t *P );
 
 /* Retrieve the next pseudo-random number without advancing the sequence */
 extern uint32_t prng_peek( prng_t *P );
