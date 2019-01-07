@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------------------------*/
 /* Storage benchmark motif 1: scattered small-file I/O
  * This motif aims to measure storage candidate performance for an
  * application workload with the following characteristics:
@@ -16,7 +16,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "prng.h"
+#include "utils.h"
+
 int main( int argc, char *argv[] )
 {
+    /* Application setup and early configuration */
+    prng_select( PRNG_DEBUG );
+
     return 0;
 }
