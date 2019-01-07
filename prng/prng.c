@@ -34,18 +34,6 @@ void prng_select( prng_impl_t impl )
     }
 }
 
-/*------------------------------------------------------------------------------------------------*/
-/* Create and destroy a number of PRNG objects */
-prng_t *prng_create_array( const unsigned nobj, const uint32_t seed )
-{
-    return PRNG->prng_create_array( nobj, seed );
-}
-
-void prng_destroy_array( prng_t *P )
-{
-    PRNG->prng_destroy_array( P );
-}
-
 /* Create and initialise a single PRNG object. */
 /* This is treated as a special case of allocating mutiple objects */
 prng_t *prng_create( const uint32_t seed )
