@@ -12,6 +12,9 @@
 #ifndef __SAMPLE_H__                                              /* __SAMPLE_H__ */
 #define __SAMPLE_H__                                              /* __SAMPLE_H__ */
 
+/* NOTE: byte length defined here must be an integral number of 32-bit words */
+#define SAMPLE_LEN_MAX 1536
+
 /* Opaque datatype for sample objects */
 typedef struct sample_s sample_t;
 
@@ -24,6 +27,9 @@ extern void sample_destroy( sample_t *S );
 /* Re-initialise a pre-allocated sample data object */
 extern sample_t *sample_init( sample_t *S, prng_t *P );
 
+/* Initialise a sample_t object (NB, unvalidated) from storage data */
+extern void sample_read( sample_t *S, const void *data, const size_t len );
+
 /* Finalise a sample data object (de-initialise without deallocation) */
 extern void sample_fini( sample_t *S );
 
@@ -33,7 +39,7 @@ extern bool sample_valid( sample_t *S, prng_t *P );
 /* Retrieve the length of a sample data object */
 extern size_t sample_len( sample_t *S );
 
-/* Retrieve the data from a sample data object */
+/* Access the data from a sample data object */
 extern const void *sample_data( sample_t *S );
 
 /* Select an implementation of sample data object
