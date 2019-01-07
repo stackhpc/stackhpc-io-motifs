@@ -17,6 +17,16 @@ struct prng_s
     uint32_t seq;
 };
 
+static prng_t *prng_debug_init( prng_t *P, const uint32_t seed )
+{
+    P->seq = seed;
+    return P;
+}
+
+static void prng_debug_fini( prng_t *P )
+{
+}
+
 /* Create and destroy a number of PRNG objects */
 static prng_t *prng_debug_create_array( const unsigned nobj, const uint32_t seed )
 {
@@ -25,7 +35,7 @@ static prng_t *prng_debug_create_array( const unsigned nobj, const uint32_t seed
     {
         for( unsigned i=0; i < nobj; i++ )
         {
-            P[i].seq = seed;
+            prng_debug_init( P+i, seed );
         }
     }
     return P;
@@ -51,9 +61,15 @@ static void prng_debug_destroy( prng_t *P )
 }
 
 /* Get the next pseudo-random number in the sequence */
-static uint32_t prng_debug_random( prng_t *P )
+static uint32_t prng_debug_get( prng_t *P )
 {
     return P->seq++;
+}
+
+/* Retrieve the next pseudo-random number without advancing the sequence */
+static uint32_t prng_debug_peek( prng_t *P )
+{
+    return P->seq;
 }
 
 
@@ -62,7 +78,10 @@ prng_driver_t prng_debug =
 {
     .prng_create = prng_debug_create,
     .prng_destroy = prng_debug_destroy,
+    .prng_init = prng_debug_init,
+    .prng_fini = prng_debug_fini,
     .prng_create_array = prng_debug_create_array,
     .prng_destroy_array = prng_debug_destroy_array,
-    .prng_random = prng_debug_random,
+    .prng_get = prng_debug_get,
+    .prng_peek = prng_debug_peek,
 };
