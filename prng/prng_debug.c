@@ -27,37 +27,20 @@ static void prng_debug_fini( prng_t *P )
 {
 }
 
-/* Create and destroy a number of PRNG objects */
-static prng_t *prng_debug_create_array( const unsigned nobj, const uint32_t seed )
+/* Create and destroy a single PRNG object */
+static prng_t *prng_debug_create( const uint32_t seed )
 {
-    prng_t *P = malloc( nobj * sizeof(struct prng_s) );
+    prng_t *P = malloc( sizeof(struct prng_s) );
     if( P != NULL )
     {
-        for( unsigned i=0; i < nobj; i++ )
-        {
-            prng_debug_init( P+i, seed );
-        }
+            P->seq = seed;
     }
     return P;
 }
 
-static void prng_debug_destroy_array( prng_t *P )
-{
-    free( P );
-}
-
-/* Create and initialise a single PRNG object. */
-/* This is treated as a special case of allocating mutiple objects */
-static prng_t *prng_debug_create( const uint32_t seed )
-{
-    return prng_create_array( 1, seed );
-}
-
-/* Create and initialise a single PRNG object. */
-/* This is treated as a special case of allocating mutiple objects */
 static void prng_debug_destroy( prng_t *P )
 {
-    prng_destroy_array( P );
+    free( P );
 }
 
 /* Get the next pseudo-random number in the sequence */
@@ -80,8 +63,6 @@ prng_driver_t prng_debug =
     .prng_destroy = prng_debug_destroy,
     .prng_init = prng_debug_init,
     .prng_fini = prng_debug_fini,
-    .prng_create_array = prng_debug_create_array,
-    .prng_destroy_array = prng_debug_destroy_array,
     .prng_next = prng_debug_next,
     .prng_peek = prng_debug_peek,
 };
