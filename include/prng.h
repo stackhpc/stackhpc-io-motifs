@@ -17,10 +17,6 @@ typedef struct prng_s prng_t;
 extern prng_t *prng_create( const uint32_t seed );
 extern void prng_destroy( prng_t *P );
 
-/* They will be initialised with seeds generated in a PRNG sequence from the supplied seed */
-extern prng_t *prng_create_array( const unsigned nobj, const uint32_t master_seed );
-extern void prng_destroy_array( prng_t *P );
-
 /* Initialise and finalise a pre-allocated PRNG object */
 /* Initialise can be used to reset a PRNG to a seed value */
 extern prng_t *prng_init( prng_t *P, const uint32_t seed );
