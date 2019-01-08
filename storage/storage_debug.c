@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <dirent.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -90,6 +91,30 @@ static int storage_debug_destroy( void )
     /* Deallocate the workspace (this might take a while...) */
     if( storage_debug_workspace != NULL )
     {
+        /* Erase all files in the directory */
+        DIR *D = opendir( "." );
+        if( D != NULL )
+        {
+            struct dirent *obj;
+            while( (obj=readdir(D)) != NULL )
+            {
+                struct stat st;
+                const int stat_result = stat( obj->d_name, &st );
+                if( stat_result < 0 )
+                {
+                    log_error( "Couldn't stat object %s prior to removal", obj->d_name );
+                    continue;
+                }
+
+                if( st.st_mode & S_IFREG )
+                {
+                    log_trace( "Removing object %s", obj->d_name );
+                    unlink( obj->d_name );
+                }
+            }
+            closedir( D );
+        }
+
         log_trace( "Returning to %s", storage_debug_cwd );
         chdir( storage_debug_cwd );
         /* FIXME: we need to empty the directory first - this won't work */
