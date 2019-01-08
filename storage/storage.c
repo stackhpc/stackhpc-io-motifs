@@ -19,6 +19,7 @@ void storage_select( storage_impl_t impl )
     static const struct { storage_impl_t impl; storage_driver_t *driver; } storage_drivers[] = 
     {
         { STORAGE_DEBUG, &storage_debug },
+        { STORAGE_DIRTREE, &storage_dirtree },
     };
 
     for( unsigned i=0; i < ARRAYLEN(storage_drivers); i++ )

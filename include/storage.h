@@ -30,6 +30,7 @@ extern int storage_read( const uint32_t client_id, const uint32_t obj_id, sample
 typedef enum storage_impl
 {
     STORAGE_DEBUG,             /* Default */
+    STORAGE_DIRTREE,
 } storage_impl_t;
 extern void storage_select( storage_impl_t impl );
 
