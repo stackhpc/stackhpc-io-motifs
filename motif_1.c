@@ -19,7 +19,6 @@
 #include "prng.h"
 #include "sample.h"
 #include "storage.h"
-#include "log.h"
 #include "utils.h"
 
 #define OBJ_COUNT 10
@@ -38,7 +37,6 @@ int main( int argc, char *argv[] )
     {
         return -1;
     }
-    log_set_fp( stderr );
 
     /* Write out phase */
 

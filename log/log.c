@@ -26,7 +26,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "log.h"
+#include "utils.h"
 
 #define LOG_USE_COLOR           /* Enable ANSI escape sequences on stderr */
 
