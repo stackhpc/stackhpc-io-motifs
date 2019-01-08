@@ -18,7 +18,7 @@
 /* Simple implementation of data object samples for debug */
 
 /* NOTE: sample_debug_len_max must be an integral number of uint32_t words.  We depend on this. */
-static const size_t sample_debug_len_min = 512, sample_debug_len_max = 1024;
+static const size_t sample_debug_len_min = SAMPLE_LEN_MAX/2, sample_debug_len_max = SAMPLE_LEN_MAX;
 
 struct sample_s
 {
@@ -52,6 +52,13 @@ static sample_t *sample_debug_init( sample_t *S, prng_t *P )
     if( remain ) S->data[whole_words] = prng_next( P );
 
     return S;
+}
+
+static void sample_debug_read( sample_t *S, const void *data, const size_t len )
+{
+    assert( len <= SAMPLE_LEN_MAX );
+    S->len = len;
+    memcpy( S->data, data, len );
 }
 
 /* Compare a sample value with the PRNG sequence that generated it. */
@@ -157,6 +164,7 @@ sample_driver_t sample_debug =
     .sample_create = sample_debug_create,
     .sample_destroy = sample_debug_destroy,
     .sample_init = sample_debug_init,
+    .sample_read = sample_debug_read,
     .sample_fini = sample_debug_fini,
     .sample_valid = sample_debug_valid,
     .sample_len = sample_debug_len,

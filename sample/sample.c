@@ -53,6 +53,11 @@ sample_t *sample_init( sample_t *S, prng_t *P )
     return sample->sample_init( S, P );
 }
 
+void sample_read( sample_t *S, const void *data, const size_t len )
+{
+    sample->sample_read( S, data, len );
+}
+
 void sample_fini( sample_t *S )
 {
     sample->sample_fini( S );
@@ -68,7 +73,7 @@ size_t sample_len( sample_t *S )
     return sample->sample_len( S );
 }
 
-const void *sample_data( sample_t *S )
+void const *sample_data( sample_t *S )
 {
     return sample->sample_data( S );
 }

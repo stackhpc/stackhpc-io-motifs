@@ -15,6 +15,7 @@ typedef struct
     /* Initialise and finalise a pre-allocated SAMPLE object */
     /* Initialise can be used to reset a SAMPLE to a seed value */
     sample_t *(*sample_init)( sample_t *S, prng_t *P );
+    void (*sample_read)( sample_t *S, const void *data, const size_t len );
     void (*sample_fini)( sample_t *S );
 
     bool (*sample_valid)( sample_t *S, prng_t *P );
