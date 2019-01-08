@@ -11,7 +11,6 @@
 #include <sys/types.h>
 
 #include "utils.h"
-#include "log.h"
 #include "sample.h"
 #include "sample_priv.h"
 

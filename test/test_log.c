@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include "log.h"
+#include "utils.h"
 
 int main( int argc, char *argv[] )
 {

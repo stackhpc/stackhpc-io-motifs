@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 
 #include "utils.h"
-#include "log.h"
 #include "prng.h"
 #include "sample.h"
 #include "storage.h"

@@ -58,7 +58,7 @@ int main( int argc, char *argv[] )
         storage_read( client_id, obj_id[i], S );
         if( !sample_valid( S, P ) )
         {
-            fprintf( stderr, "Object %d is not valid\n", i );
+            log_error( "Object %d is not valid", i );
         }
     }
 
