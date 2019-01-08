@@ -21,6 +21,7 @@ void prng_select( prng_impl_t impl )
     static const struct { prng_impl_t impl; prng_driver_t *driver; } prng_drivers[] = 
     {
         { PRNG_DEBUG, &prng_debug },
+        { PRNG_XORSHIFT, &prng_xorshift },
     };
 
     for( unsigned i=0; i < ARRAYLEN(prng_drivers); i++ )
