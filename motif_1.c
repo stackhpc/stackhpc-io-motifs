@@ -29,6 +29,7 @@ int main( int argc, char *argv[] )
     uint32_t obj_id[OBJ_COUNT];
 
     /* Application setup and early configuration */
+    time_now( &time_start );
     prng_select( PRNG_DEBUG );
     sample_select( SAMPLE_DEBUG );
     storage_select( STORAGE_DEBUG );
@@ -37,6 +38,9 @@ int main( int argc, char *argv[] )
     {
         return -1;
     }
+
+    /* Synchronise and start the benchmark */
+    time_now( &time_benchmark );
 
     /* Write out phase */
 
