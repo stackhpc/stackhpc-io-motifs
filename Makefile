@@ -7,7 +7,7 @@ LIBS = -lpthread -lm
 COMMON_SRCS = prng/prng.c prng/prng_debug.c prng/prng_xorshift.c \
               sample/sample.c sample/sample_debug.c \
               storage/storage.c storage/storage_debug.c \
-              log/log.c
+              log/log.c utils/time.c utils/trace.c
 
 COMMON_OBJS = $(COMMON_SRCS:%.c=%.o)
 
