@@ -26,5 +26,6 @@ typedef struct
 
 /* Storage driver implementations */
 extern storage_driver_t storage_debug;
+extern storage_driver_t storage_dirtree;
 
 #endif                                                          /* __STORAGE_PRIV_H__ */
