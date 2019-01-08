@@ -29,7 +29,6 @@
 
 static char *storage_debug_workspace = NULL;
 static char storage_debug_cwd[PATH_MAX];
-static prng_t *PRNG = NULL;
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
@@ -106,7 +105,7 @@ static int storage_debug_destroy( void )
                     continue;
                 }
 
-                if( st.st_mode & S_IFREG )
+                if( S_ISREG(st.st_mode) )
                 {
                     log_trace( "Removing object %s", obj->d_name );
                     unlink( obj->d_name );

@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -std=c99
-CPPFLAGS = -Iinclude
+CFLAGS = -Wall -g -std=c99
+CPPFLAGS = -Iinclude -D_POSIX_C_SOURCE=200809L
 LDFLAGS =
 LIBS = -lpthread -lm
 
