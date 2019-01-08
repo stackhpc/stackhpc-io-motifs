@@ -1,6 +1,6 @@
 /*------------------------------------------------------------------------------------------------*/
 /* Pseudo-random number generator:
- * Generate useful random number sequences that are repeatable based on a seed value.
+ * Generate useful random number sequences that are repeatable based on a seed value. */
 /* Begun 2018-2019, StackHPC Ltd */
 
 #include <stdint.h>

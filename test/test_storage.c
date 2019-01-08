@@ -38,9 +38,29 @@ int main( int argc, char *argv[] )
         return -1;
     }
 
-    /* Write out phase */
+    const pid_t client_id = getpid(); 
+    prng_t *P = prng_create( 42 );
+    sample_t *S = sample_create( P );
 
-    /* Read back phase */
+    /* Write out phase */
+    for( unsigned i=0; i < OBJ_COUNT; i++ )
+    {
+        obj_id[i] = prng_peek(P);
+        sample_init( S, P );
+        storage_write( client_id, obj_id[i], S );
+    }
+
+    /* Read back all objects */
+    prng_init( P, 42 );
+    for( unsigned i=0; i < OBJ_COUNT; i++ )
+    {
+        prng_init( P, obj_id[i] );
+        storage_read( client_id, obj_id[i], S );
+        if( !sample_valid( S, P ) )
+        {
+            fprintf( stderr, "Object %d is not valid\n", i );
+        }
+    }
 
     storage_destroy( );
     return 0;
