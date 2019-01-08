@@ -28,6 +28,8 @@
 
 #include "log.h"
 
+#define LOG_USE_COLOR           /* Enable ANSI escape sequences on stderr */
+
 static struct {
   void *udata;
   log_LockFn lock;
@@ -36,9 +38,9 @@ static struct {
   int quiet;
 } L;
 
-
 static const char *level_names[] = {
-  "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
+  /* TRACE  DEBUG   INFO    WARN    ERROR   FATAL */
+     "++",  "--",   "ii",   "??",   "!!",   "XX"
 };
 
 #ifdef LOG_USE_COLOR
@@ -106,10 +108,10 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
     buf[strftime(buf, sizeof(buf), "%H:%M:%S", lt)] = '\0';
 #ifdef LOG_USE_COLOR
     fprintf(
-      stderr, "%s %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
+      stderr, "%s %s%-2s\x1b[0m \x1b[90m%s:%3d:\x1b[0m ",
       buf, level_colors[level], level_names[level], file, line);
 #else
-    fprintf(stderr, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+    fprintf(stderr, "%s %-2s %s:%3d: ", buf, level_names[level], file, line);
 #endif
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
@@ -123,7 +125,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
     va_list args;
     char buf[32];
     buf[strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", lt)] = '\0';
-    fprintf(L.fp, "%s %-5s %s:%d: ", buf, level_names[level], file, line);
+    fprintf(L.fp, "%s %-2s %s:%3d: ", buf, level_names[level], file, line);
     va_start(args, fmt);
     vfprintf(L.fp, fmt, args);
     va_end(args);
