@@ -132,8 +132,11 @@ static int storage_debug_destroy( void )
 /* Write a sample object to storage */
 static int storage_debug_write( const uint32_t client_id, const uint32_t obj_id, sample_t *S )
 {
+    struct timespec iop_start, iop_end, iop_delta, ts_delta;
     char filename[20];
     snprintf( filename, sizeof(filename), "%08x-%08x", client_id, obj_id );
+
+    time_now( &iop_start );
     const int fd = open( filename, O_CREAT|O_EXCL|O_WRONLY, 0644 );
     if( fd < 0 )
     {
@@ -154,6 +157,10 @@ static int storage_debug_write( const uint32_t client_id, const uint32_t obj_id,
         log_error( "Unable to close file %s: %s", filename, strerror(errno) );
         return -1;
     }
+    time_now( &iop_end );
+    time_delta( &iop_start, &iop_end, &iop_delta );
+    time_delta( &time_benchmark, &iop_start, &ts_delta );
+    trace_write( &ts_delta, &iop_delta );
 
     return 0;
 }
@@ -161,10 +168,12 @@ static int storage_debug_write( const uint32_t client_id, const uint32_t obj_id,
 /* Read a sample object from storage */
 static int storage_debug_read( const uint32_t client_id, const uint32_t obj_id, sample_t *S )
 {
+    struct timespec iop_start, iop_end, iop_delta, ts_delta;
     uint8_t obj_data[SAMPLE_LEN_MAX];
     char filename[20];
     snprintf( filename, sizeof(filename), "%08x-%08x", client_id, obj_id );
 
+    time_now( &iop_start );
     const int fd = open( filename, O_RDONLY );
     if( fd < 0 )
     {
@@ -195,6 +204,10 @@ static int storage_debug_read( const uint32_t client_id, const uint32_t obj_id, 
         log_error( "Unable to close file %s: %s", filename, strerror(errno) );
         return -1;
     }
+    time_now( &iop_end );
+    time_delta( &iop_start, &iop_end, &iop_delta );
+    time_delta( &time_benchmark, &iop_start, &ts_delta );
+    trace_read( &ts_delta, &iop_delta );
 
     /* Transfer the data into our sample object */
     sample_read( S, obj_data, st.st_size );
