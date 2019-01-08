@@ -15,35 +15,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
-#include "prng.h"
-#include "sample.h"
-#include "storage.h"
 #include "log.h"
-#include "utils.h"
-
-#define OBJ_COUNT 10
-#define STORAGE_WORKSPACE "motif_1-data" 
 
 int main( int argc, char *argv[] )
 {
-    uint32_t obj_id[OBJ_COUNT];
+    FILE * fp;
 
-    /* Application setup and early configuration */
-    prng_select( PRNG_DEBUG );
-    sample_select( SAMPLE_DEBUG );
-    storage_select( STORAGE_DEBUG );
-    const int result = storage_create( STORAGE_WORKSPACE );
-    if( result < 0 )
-    {
-        return -1;
-    }
-    log_set_fp( stderr );
+    log_trace("Hello %s", "world");
 
-    /* Write out phase */
+    assert((fp = fopen ("log_test.log", "a+")) != NULL);
 
-    /* Read back phase */
+    log_set_fp( fp );
 
-    storage_destroy( );
+    log_trace("Hello %s", "world");
+    
     return 0;
 }

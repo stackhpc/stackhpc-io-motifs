@@ -11,6 +11,7 @@
 #include <sys/types.h>
 
 #include "utils.h"
+#include "log.h"
 #include "sample.h"
 #include "sample_priv.h"
 
@@ -68,7 +69,7 @@ static bool sample_debug_valid( sample_t *S, prng_t *P )
     const size_t valid_len = sample_debug_len_calc( P );
     if( S->len != valid_len )
     {
-        fprintf( stderr, "Length mismatch: Wanted %zd, got %zd\n", valid_len, S->len );
+        log_error( "Length mismatch: Wanted %zd, got %zd", valid_len, S->len );
         return false;
     }
 
@@ -80,7 +81,7 @@ static bool sample_debug_valid( sample_t *S, prng_t *P )
         const uint32_t check_data = prng_next( P );
         if( check_data != S->data[i] )
         {
-            fprintf( stderr, "Data mismatch at word %u: Wanted %08x got %08x\n", i, check_data, S->data[i] );
+            log_error( "Data mismatch at word %u: Wanted %08x got %08x", i, check_data, S->data[i] );
             return false;
         }
     }
@@ -97,7 +98,7 @@ static bool sample_debug_valid( sample_t *S, prng_t *P )
 
         if( memcmp(check_remain, (const void *)(S->data + whole_words), remain ) != 0 )
         {
-            fprintf( stderr, "Data mismatch at remainder of sample\n" );
+            log_error( "Data mismatch at remainder of sample" );
             return false;
         }
     }
