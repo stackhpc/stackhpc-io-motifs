@@ -13,7 +13,8 @@
 #define __SAMPLE_H__                                              /* __SAMPLE_H__ */
 
 /* NOTE: byte length defined here must be an integral number of 32-bit words */
-#define SAMPLE_LEN_MAX 1536
+#define SAMPLE_LEN_WORDS    384
+#define SAMPLE_LEN_MAX      (SAMPLE_LEN_WORDS * sizeof(uint32_t))
 
 /* Opaque datatype for sample objects */
 typedef struct sample_s sample_t;
