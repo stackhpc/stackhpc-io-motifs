@@ -23,5 +23,6 @@ typedef struct
 
 /* PRNG Implementations */
 extern prng_driver_t prng_debug;
+extern prng_driver_t prng_xorshift;
 
 #endif                                                          /* __PRNG_PRIV_H__ */

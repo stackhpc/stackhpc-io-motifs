@@ -33,6 +33,7 @@ extern uint32_t prng_peek( prng_t *P );
 typedef enum prng_impl
 {
     PRNG_DEBUG,             /* Default */
+    PRNG_XORSHIFT,          /* xor shift */
 } prng_impl_t;
 extern void prng_select( prng_impl_t impl );
 
