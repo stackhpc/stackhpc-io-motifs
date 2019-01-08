@@ -2,6 +2,8 @@
 /* Emitting performance traces.
  * Generating telemetry streams during benchmark execution */
 
+#include "utils.h"
+
 /* Trace data needs to hold the following components:
  * - Timestamp of operation commencement, relative to benchmark start.
  * - Type of record:

@@ -7,6 +7,8 @@
 
 #include "utils.h"
 
+struct timespec time_start, time_benchmark;
+
 /* Get current time in seconds and nanoseconds */
 void time_now( struct timespec *ts )
 {

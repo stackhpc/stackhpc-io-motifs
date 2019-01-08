@@ -26,6 +26,9 @@ extern void time_now( struct timespec *ts );
 /* Calculate the time difference between t1 and t2, in seconds and nanoseconds (NB: t1 < t2) */
 extern void time_delta( const struct timespec *t1, const struct timespec *t2, struct timespec *delta );
 
+/* Timestamps for relative time offsets */
+extern struct timespec time_start;          /* A timestamp set at application startup. */
+extern struct timespec time_benchmark;      /* A timestamp set at the start of the benchmark run. */
 
 /*------------------------------------------------------------------------------------------------*/
 /* Emitting performance traces.
