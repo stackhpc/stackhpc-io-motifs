@@ -5,11 +5,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 #include "utils.h"
 #include "pthread.h"
-
-extern int errno ;
-
 
 /* Trace data needs to hold the following components:
  * - Timestamp of operation commencement, relative to benchmark start.
@@ -26,8 +25,8 @@ extern int errno ;
  * - It should be fine to emit a logfile per type of IOP, with IOP type implicit.
  */
 
-
-#define TRACE_NENT 16384 	/* TODO - paramterize the size (trace_init) */
+#define TRACE_MAXENT 65536	/* Must fit in uint16_t */
+#define TRACE_NENT TRACE_MAXENT /* TODO - paramterize the size (trace_init) */
 
 typedef enum trace_req {
     TRACE_NONE = 0,		/* No pending operation */
@@ -51,9 +50,11 @@ static trace_info_t ti;		/* Active trace state */
 static pthread_mutex_t trace_flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  trace_cond        = PTHREAD_COND_INITIALIZER;
 
-#define TRACE_BLOCK 100 	/* Blocking factor for buffer flushing */
+/* File write control */
+#define TRACE_WRITE_SIZE 	8192	
+#define TRACE_BLOCK 		(TRACE_WRITE_SIZE/sizeof(trace_entry_t)) 
 
-void *sync_trace ( void );	/* Flush thread */
+void *trace_sync ( void );	/* Flush thread */
 
 /* 
  * Initialize trace state. This includes creation of trace log file and 
@@ -61,49 +62,51 @@ void *sync_trace ( void );	/* Flush thread */
  */
 int trace_init( const char *trace_dir, const uint32_t trace_id )
 {
-    char path[1024]; 
+    char path[PATH_MAX]; 
     int ret;
 
-    log_info( "trace_init" );
+    log_debug( "trace_init" );
 
     /* Create handle to trace log file */
     sprintf(path, "%s/%x.trc", trace_dir, trace_id);
-    log_info( "trace_file: %s", path );
+    log_debug( "trace_file: %s", path );
     if ( (ti.ti_fp=fopen(path, "w+")) == NULL ) {
         log_error("open of trace file (%s) failed, (%d) ", path, errno);
         return( -1 );
     }
 
     /* Initialize trace state */
-    ti.ti_lastflush = 0;
-    ti.ti_nextflush = 0;
+    ti.ti_lastflush = ti.ti_nextflush = (uint16_t)TRACE_NENT;
     ti.ti_nextent = 0;
     ti.ti_req = TRACE_NONE;
 
     /* Spawn flush thread */
-    log_info( "spawn" );
-    if ( (ret = pthread_create( &ti.ti_flushthread, NULL, (void*)sync_trace, (void*)&ti )) < 0 ) {
+    log_debug( "spawn" );
+    if ( (ret = pthread_create( &ti.ti_flushthread, NULL, (void*)trace_sync, 
+                                (void*)&ti )) < 0 ) {
         log_error( "pthread_create failed - %d", ret );
         return -1;
     }
     
-    log_info( "trace_init return" );
+    log_debug( "trace_init return" );
     return 0;
 }
 
 /* Complete tracing, flush buffers and close files, terminate the captive thread */
 int trace_fini( void )
 {
-    log_info( "trace_fini" );
+    log_debug( "trace_fini" );
 
     /* Send final flush / exit request to trace thread */
     pthread_mutex_lock( &trace_flush_mutex );
+    log_debug( "trigger flush at %d", ti.ti_nextent-1 );
     ti.ti_req = TRACE_EXIT;
+    ti.ti_nextflush = ti.ti_nextent-1;
     pthread_cond_signal( &trace_cond );
     pthread_mutex_unlock( &trace_flush_mutex );
 
     /* Wait for logging thread to terminate */
-    log_info( "wait for thread to terminate" );
+    log_debug( "wait for thread to terminate" );
     pthread_join( ti.ti_flushthread, NULL );
     return 0;
 }
@@ -111,7 +114,7 @@ int trace_fini( void )
 /* Utility function to request trace buffer flush */
 void trace_flush()
 {
-    log_info( "trace_flush" );
+    log_debug( "trace_flush" );
 
     /* Send flush request to logging thread */
     pthread_mutex_lock( &trace_flush_mutex );
@@ -120,12 +123,19 @@ void trace_flush()
     pthread_mutex_unlock( &trace_flush_mutex );
 }
 
-/* Create trace entry. Flush outstanding trace entries periodically (based on TRACE_BLOCK) */
-int trace( const trace_type_t tt, const struct timespec *ts, const struct timespec *iop )
+/* 
+ * Create trace entry. Flush outstanding trace entries periodically 
+ * (based on TRACE_BLOCK) 
+ */
+int trace( const trace_type_t tt, const struct timespec *ts, 
+           const struct timespec *iop )
 {
+    uint16_t next = ti.ti_nextent;
     trace_entry_t *te = &ti.ti_tracebuf[ti.ti_nextent++];
 
-    log_info( "got trace request" );
+    ti.ti_nextent = ti.ti_nextent % TRACE_NENT;
+
+    log_debug( "got trace request %d", next );
 
     /* Create trace entry */
     te->info.op = tt;
@@ -135,7 +145,7 @@ int trace( const trace_type_t tt, const struct timespec *ts, const struct timesp
 
     /* Request buffer flush if enough entries have accumulated */
     if (( ti.ti_nextent % TRACE_BLOCK) == 0 ) {
-        log_info( "trigger flush at %d", ti.ti_nextent-1 );
+        log_debug( "trigger flush at %d", ti.ti_nextent-1 );
         pthread_mutex_lock( &trace_flush_mutex );
         ti.ti_nextflush = te - &ti.ti_tracebuf[0];
         ti.ti_req = TRACE_FLUSH;
@@ -151,9 +161,9 @@ int trace( const trace_type_t tt, const struct timespec *ts, const struct timesp
  * task and handles them accordingly. If an exit request is observed, the thread
  * will flush any outstanding trace data and terminate.
  */
-void *sync_trace ( )
+void *trace_sync ( )
 {
-    log_info( "in thread" );
+    log_debug( "in thread" );
     
     for (;;) {
         trace_req_t req;
@@ -164,59 +174,64 @@ void *sync_trace ( )
 
         /* Wait for dump request */
         pthread_mutex_lock( &trace_flush_mutex );
-        log_info( "wait for req - %d", ti.ti_req );
+        log_debug( "wait for req - %d", ti.ti_req );
         req = ti.ti_req;
         lastflush = ti.ti_lastflush;
         nextflush = ti.ti_nextflush;
-        nflush = nextflush - lastflush;
 
         /* 
-         * If no operation request pending, wait for request to arrive. Otherwise,
-         * we update the buffer pointers to determine flush range while we have
-         * the lock.
+         * If no operation request pending, wait for request to arrive. 
+         * Otherwise, we update the buffer pointers to determine flush 
+         * range while we have the lock.
          */
         ti.ti_req = TRACE_NONE;
         if ( req == TRACE_NONE ) {
             pthread_cond_wait( &trace_cond, &trace_flush_mutex );
-        } else {
-            ti.ti_lastflush = nextflush+1;
-        }
+        } 
         pthread_mutex_unlock( &trace_flush_mutex );
         switch (req) {
             case TRACE_EXIT:
             case TRACE_FLUSH:
-                /* Flush the end of the buffer if we've wrapped. */
-                log_info( "got flush request %d<-->%d", lastflush, nextflush );
-                tbp = &ti.ti_tracebuf[lastflush];
+                log_debug( "got flush request %hu<-->%hu", 
+                           lastflush, nextflush );
+                tbp = &ti.ti_tracebuf[(lastflush+1) % TRACE_NENT];
+
+                /* Handle wrap */
                 if ( lastflush > nextflush ) 
                 {
-                    int nflush = TRACE_NENT - lastflush;
-                    if (nflush != fwrite( tbp, sizeof(trace_entry_t), nflush, ti.ti_fp )) 
+                    nflush = TRACE_NENT - lastflush;
+                    if (nflush && (nflush != 
+                                   fwrite( tbp, sizeof(trace_entry_t), 
+                                          nflush, ti.ti_fp ))) 
                     {
                         log_error( "trace buffer write failed - %d", errno );
                         return (void*)-1;
                     }
                     tbp = &ti.ti_tracebuf[0];
-                    lastflush = 0;
                     nflush = nextflush;
+                } else {
+                    nflush = nextflush - lastflush;
                 }
 
                 /* Flush any remaining entries */
-                if (nflush != fwrite( tbp, sizeof(trace_entry_t), nflush, ti.ti_fp ))
+                if (nflush && (nflush != fwrite( tbp, sizeof(trace_entry_t), 
+                                      nflush, ti.ti_fp )))
                 {
                     log_error( "trace buffer write failed - %d", errno );
                     return (void*)-1;
                 }
 
+                ti.ti_lastflush = nextflush;
+
                 /* Terminate if requested */
                 if ( req == TRACE_EXIT ) {
-                    log_info( "got exit request" );
+                    log_debug( "got exit request" );
                     fclose( ti.ti_fp );
                     return (void*)0;
                 }
                 break;
             default:
-		log_info( "unknown req %d", req);
+		log_debug( "unknown req %d", req);
                 break;
         }
      }
