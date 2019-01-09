@@ -36,6 +36,7 @@ int main( int argc, char *argv[] )
         time_delta( &t_start, &t_iter, &t_delta );
         trace_read( &t_delta, &t_delta );
         trace_write( &t_delta, &t_delta );
+        trace( TRACE_MISC, &t_delta, &t_delta, "teststr" );
     }
     
     trace_fini();

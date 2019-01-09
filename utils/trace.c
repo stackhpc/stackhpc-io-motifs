@@ -25,9 +25,13 @@
  * - It should be fine to emit a logfile per type of IOP, with IOP type implicit.
  */
 
-#define TRACE_MAXENT 65536	/* Must fit in uint16_t */
-#define TRACE_NENT TRACE_MAXENT /* TODO - paramterize the size (trace_init) */
+#define TRACE_MAXENT 		65536		/* Must fit in uint16_t */
+#define TRACE_NENT   		TRACE_MAXENT 	/* TODO - paramterize   */
+#define TRACE_MOD_ADD(x, y) 	((unsigned)((x)+(y)) % TRACE_NENT)
+#define TRACE_MOD_INC(x)    	TRACE_MOD_ADD((x), 1)
 
+
+/* Trace buffer management strutures  */
 typedef enum trace_req {
     TRACE_NONE = 0,		/* No pending operation */
     TRACE_FLUSH,		/* Flush the current trace buffer */
@@ -76,7 +80,7 @@ int trace_init( const char *trace_dir, const uint32_t trace_id )
     }
 
     /* Initialize trace state */
-    ti.ti_lastflush = ti.ti_nextflush = (uint16_t)TRACE_NENT;
+    ti.ti_lastflush = ti.ti_nextflush = (uint16_t)(TRACE_NENT-1);
     ti.ti_nextent = 0;
     ti.ti_req = TRACE_NONE;
 
@@ -128,27 +132,33 @@ void trace_flush()
  * (based on TRACE_BLOCK) 
  */
 int trace( const trace_type_t tt, const struct timespec *ts, 
-           const struct timespec *iop )
+           const struct timespec *iop, const char *tag )
 {
     uint16_t next = ti.ti_nextent;
-    trace_entry_t *te = &ti.ti_tracebuf[ti.ti_nextent++];
+    trace_entry_t *te = &ti.ti_tracebuf[ti.ti_nextent];
 
-    ti.ti_nextent = ti.ti_nextent % TRACE_NENT;
+    ti.ti_nextent = TRACE_MOD_INC(ti.ti_nextent);
 
     log_debug( "got trace request %d", next );
 
     /* Create trace entry */
     te->info.op = tt;
-    te->info.tag = 0;
     te->timestamp = *ts;
     te->duration = *iop;
+
+    /* Add tag to entry if appropriate */
+    if ( tag ) {
+        strncpy(&te->info.tag[0], tag, 7);
+    } else {
+        te->info.tag[0] = 0;
+    }
 
     /* Request buffer flush if enough entries have accumulated */
     if (( ti.ti_nextent % TRACE_BLOCK) == 0 ) {
         log_debug( "trigger flush at %d", ti.ti_nextent-1 );
         pthread_mutex_lock( &trace_flush_mutex );
-        ti.ti_nextflush = te - &ti.ti_tracebuf[0];
         ti.ti_req = TRACE_FLUSH;
+        ti.ti_nextflush = te - &ti.ti_tracebuf[0];
         pthread_cond_signal( &trace_cond );
         pthread_mutex_unlock( &trace_flush_mutex );
     }
@@ -170,7 +180,6 @@ void *trace_sync ( )
         trace_entry_t *tbp;
         uint16_t lastflush;
         uint16_t nextflush;
-        uint16_t nflush;
 
         /* Wait for dump request */
         pthread_mutex_lock( &trace_flush_mutex );
@@ -190,16 +199,25 @@ void *trace_sync ( )
         } 
         pthread_mutex_unlock( &trace_flush_mutex );
         switch (req) {
+            int thisflush;
+            uint16_t nflush;
+
             case TRACE_EXIT:
             case TRACE_FLUSH:
+                thisflush = TRACE_MOD_INC(lastflush);
+
                 log_debug( "got flush request %hu<-->%hu", 
-                           lastflush, nextflush );
-                tbp = &ti.ti_tracebuf[(lastflush+1) % TRACE_NENT];
+                            thisflush, nextflush );
+                tbp = &ti.ti_tracebuf[thisflush];
 
                 /* Handle wrap */
-                if ( lastflush > nextflush ) 
+                if ( thisflush > nextflush ) 
                 {
-                    nflush = TRACE_NENT - lastflush;
+                    nflush = TRACE_NENT - thisflush;
+                    ti.ti_lastflush = TRACE_MOD_ADD(ti.ti_lastflush, nflush);
+
+                    log_debug( "writing %hu records from %hu", 
+                                nflush, thisflush);
                     if (nflush && (nflush != 
                                    fwrite( tbp, sizeof(trace_entry_t), 
                                           nflush, ti.ti_fp ))) 
@@ -208,20 +226,22 @@ void *trace_sync ( )
                         return (void*)-1;
                     }
                     tbp = &ti.ti_tracebuf[0];
-                    nflush = nextflush;
+                    nflush = nextflush + 1;
+                    thisflush = 0;
                 } else {
-                    nflush = nextflush - lastflush;
+                    nflush = (nextflush - thisflush) + 1;
                 }
 
+                ti.ti_lastflush = TRACE_MOD_ADD(ti.ti_lastflush, nflush);
+
                 /* Flush any remaining entries */
+                log_debug( "writing %hu records from %d", nflush, thisflush);
                 if (nflush && (nflush != fwrite( tbp, sizeof(trace_entry_t), 
                                       nflush, ti.ti_fp )))
                 {
                     log_error( "trace buffer write failed - %d", errno );
                     return (void*)-1;
                 }
-
-                ti.ti_lastflush = nextflush;
 
                 /* Terminate if requested */
                 if ( req == TRACE_EXIT ) {
