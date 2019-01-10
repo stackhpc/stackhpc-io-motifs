@@ -31,7 +31,7 @@ int main( int argc, char *argv[] )
         exit(1);
     }
 
-    for( i=0; i<500; i++ ) {
+    for( i=0; i<10; i++ ) {
         time_now( &t_iter );
         time_delta( &t_start, &t_iter, &t_delta );
         trace_read( &t_delta, &t_delta );
