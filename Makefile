@@ -4,6 +4,13 @@ CPPFLAGS = -Iinclude -D_POSIX_C_SOURCE=200809L
 LDFLAGS =
 LIBS = -lpthread -lm
 
+MAJOR = 0
+MINOR = 1
+BUILD_DATE = $(shell date +"%Y%m%d.%H%M")
+VERSION= "\"$(MAJOR).$(MINOR).$(BUILD_DATE)\""
+
+CPPFLAGS += -DVERSION=$(VERSION)
+
 COMMON_SRCS = prng/prng.c prng/prng_debug.c prng/prng_xorshift.c \
               sample/sample.c sample/sample_debug.c \
               storage/storage.c storage/storage_debug.c storage/storage_dirtree.c \

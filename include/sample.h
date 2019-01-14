@@ -49,6 +49,9 @@ typedef enum sample_impl
 {
     SAMPLE_DEBUG,             /* Default */
 } sample_impl_t;
+
+#define SAMPLE_IMPL_STR 	{ "DEBUG", NULL };
+
 extern void sample_select( sample_impl_t impl );
 
 #endif                                                          /* __SAMPLE_H__ */
