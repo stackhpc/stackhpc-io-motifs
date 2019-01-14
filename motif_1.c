@@ -50,30 +50,49 @@ static struct argp_option options[] =
     { "sample", 's', "SAMPLE", 0, "Sample type to use" },
     { "storage", 'S', "STORAGE", 0, "Storage type to use" } ,
     { "workspace", 'w', "WORKSPACE", 0, "Storage workspace to use" },
-    { "trace", 't', 0, 0, "Collect Traces" },
+    { "trace", 't', 0, 0, "Collect traces" },
+    { "count", 'c', "OBJECT COUNT", 0, "Object count" },
     { 0 }
 };
 
+/* State structure for motif_1 command arguments */
 struct motif_arguments
 {
-    sample_impl_t 	sample;
-    prng_impl_t 	prng;
-    storage_impl_t	storage;
-    bool		trace;
-    char		*workspace;
+    sample_impl_t 	sample;		/* Sample used in test */
+    prng_impl_t 	prng;		/* Random number generator */
+    storage_impl_t	storage;	/* Storage selection */
+    bool		trace;		/* Collect traces */
+    char		*workspace;	/* Workspace pointer */
+    int			object_count;	/* Number of objects */
 };
 
+/* Find matching ordinal for item in list */
 static int find_match ( char **list, char *which )
 {
     int match = 0;
     while ( list[match] ) {
-        if ( strcasecmp( list[match], which ) == 0 )
-            return 0;
+        if ( strcasecmp( list[match], which ) == 0 ) {
+            return match;
+        }
         ++match;
     }
     return -1;
 }
 
+/* Utility function to create a string of options from string vector */
+char *possible_options( char **option_list, char *buf )
+{
+    int opt = 0;
+    buf[0] = '\0';
+    while ( option_list[opt] ) {
+        strcat( buf, option_list[opt++] );
+        if ( option_list[opt] )
+            strcat( buf, ", " );
+    }
+    return buf;
+}
+
+/* Handle command option parsing */
 static error_t parse_opt( int key, char *arg, struct argp_state *state )
 {
     struct motif_arguments *motif_arguments = state->input;
@@ -81,25 +100,34 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
     char *storage_impl_str[] = 	STORAGE_IMPL_STR;
     char *prng_impl_str[] = 	PRNG_IMPL_STR;
     char *sample_impl_str[] = 	SAMPLE_IMPL_STR;
+    char options[PATH_MAX];
 
     switch (key) {
-    case 't':
-        motif_arguments->trace = true;
-        break;
+    case 'c':
+        if ( (motif_arguments->object_count = atoi( arg )) <= 0 ) 
+            argp_failure( state, 1, 0, "Count must be greater than 0" );
 
     case 'r':
-        if ( (motif_arguments->prng = find_match( prng_impl_str, arg )) )
-            return ARGP_ERR_UNKNOWN;
+        if ( (motif_arguments->prng = find_match( prng_impl_str, arg )) < 0 )
+            argp_failure( state, 1, 0, 
+                          "Pseudo-random number generator must be one of %s", 
+                          possible_options( prng_impl_str, options ));
         break;
 
     case 's':
-        if ( (motif_arguments->sample = find_match( sample_impl_str, arg )) )
-            return ARGP_ERR_UNKNOWN;
+        if ( (motif_arguments->sample = find_match( sample_impl_str, arg ))  < 0)
+            argp_failure( state, 1, 0, "Sample must be one of %s", 
+                          possible_options( sample_impl_str, options ));
         break;
     
     case 'S':
-        if ( (motif_arguments->storage = find_match( storage_impl_str, arg )) )
-            return ARGP_ERR_UNKNOWN;
+        if ( (motif_arguments->storage = find_match( storage_impl_str, arg ))  < 0)
+            argp_failure( state, 1, 0, "Storage must be one of %s", 
+                          possible_options( storage_impl_str, options ));
+        break;
+
+    case 't':
+        motif_arguments->trace = true;
         break;
 
     case 'w':
@@ -136,6 +164,7 @@ int main( int argc, char *argv[] )
     log_debug( "storage = %d\n", motif_arguments.storage );
     log_debug( "workspace = %s\n", motif_arguments.workspace );
     log_debug( "trace = %d\n", motif_arguments.trace );
+    log_debug( "count = %d\n", motif_arguments.object_count );
 
     exit(1);
 
