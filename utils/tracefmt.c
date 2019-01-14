@@ -27,7 +27,7 @@ void print_trace( trace_entry_t *tp )
 
     strncpy(buf, tbp, sizeof(tp->info.tag));
 
-    printf( "timestamp:%d.%d, duration:%d.%d, operation:%s, tag:%s\n", 
+    printf( "timestamp:%d.%09ld, duration:%d.%09ld, operation:%s, tag:%s\n", 
            (unsigned)tp->timestamp.tv_sec,
            (unsigned)tp->timestamp.tv_nsec,
            (unsigned)tp->duration.tv_sec,
