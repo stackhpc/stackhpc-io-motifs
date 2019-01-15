@@ -18,6 +18,9 @@
 #include <unistd.h>
 #include <argp.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 #include "prng.h"
 #include "sample.h"
@@ -50,8 +53,9 @@ static struct argp_option options[] =
     { "sample", 's', "SAMPLE", 0, "Sample type to use" },
     { "storage", 'S', "STORAGE", 0, "Storage type to use" } ,
     { "workspace", 'w', "WORKSPACE", 0, "Storage workspace to use" },
-    { "trace", 't', 0, 0, "Collect traces" },
+    { "tracedir", 't', "TRACEDIR", 0, "Directory for traces" },
     { "count", 'c', "OBJECT COUNT", 0, "Object count" },
+    { "parallel", 'p', "TASK COUNT", 0, "Number of parallel tasks" },
     { 0 }
 };
 
@@ -61,9 +65,10 @@ struct motif_arguments
     sample_impl_t 	sample;		/* Sample used in test */
     prng_impl_t 	prng;		/* Random number generator */
     storage_impl_t	storage;	/* Storage selection */
-    bool		trace;		/* Collect traces */
+    char		*trace_dir;	/* Directory for traces */
     char		*workspace;	/* Workspace pointer */
     int			object_count;	/* Number of objects */
+    int			task_count;	/* Number of tasks */
 };
 
 /* Find matching ordinal for item in list */
@@ -106,6 +111,12 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
     case 'c':
         if ( (motif_arguments->object_count = atoi( arg )) <= 0 ) 
             argp_failure( state, 1, 0, "Count must be greater than 0" );
+        break;
+
+    case 'p':
+        if ( (motif_arguments->task_count = atoi( arg )) <= 0 ) 
+            argp_failure( state, 1, 0, "Task count must be greater than 0" );
+        break;
 
     case 'r':
         if ( (motif_arguments->prng = find_match( prng_impl_str, arg )) < 0 )
@@ -127,7 +138,7 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
         break;
 
     case 't':
-        motif_arguments->trace = true;
+        motif_arguments->trace_dir = arg;
         break;
 
     case 'w':
@@ -144,18 +155,21 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
 }
 
 static struct argp argp = { options, parse_opt, args_doc, prog_doc };
+int run_motif( struct motif_arguments *map, const int ordinal );
 
 int main( int argc, char *argv[] )
 {
     uint32_t obj_id[OBJ_COUNT];
     struct motif_arguments motif_arguments;
+    int status, ret;
 
     /* Set default argument values */
-    motif_arguments.sample = 	SAMPLE_DEBUG;
-    motif_arguments.prng = 	PRNG_DEBUG;
-    motif_arguments.storage = 	STORAGE_DEBUG;
-    motif_arguments.workspace = STORAGE_WORKSPACE;
-    motif_arguments.trace =	true;
+    motif_arguments.sample = 	 SAMPLE_DEBUG;
+    motif_arguments.prng = 	 PRNG_DEBUG;
+    motif_arguments.storage = 	 STORAGE_DEBUG;
+    motif_arguments.workspace =  STORAGE_WORKSPACE;
+    motif_arguments.trace_dir =	 ".";
+    motif_arguments.task_count = 1;
 
     argp_parse( &argp, argc, argv, 0, 0, &motif_arguments );
 
@@ -163,17 +177,55 @@ int main( int argc, char *argv[] )
     log_debug( "prng = %d\n", motif_arguments.prng );
     log_debug( "storage = %d\n", motif_arguments.storage );
     log_debug( "workspace = %s\n", motif_arguments.workspace );
-    log_debug( "trace = %d\n", motif_arguments.trace );
+    log_debug( "trace_dir = %s\n", motif_arguments.trace_dir );
     log_debug( "count = %d\n", motif_arguments.object_count );
+    log_debug( "task_count = %d\n", motif_arguments.task_count );
 
-    exit(1);
+    /* Spawn individual test tasks */
+    for( int i=0; i < motif_arguments.task_count; i++ )
+    {
+        pid_t pid;
+        if( (pid = fork()) == 0 ) {
+            log_debug("in child");
+            return( run_motif( &motif_arguments, i ) );
+        }
+        if ( pid < 0 )
+        {
+            log_error( "fork failed - %d\n", pid );
+            return 1;
+        }
+    }
 
+    /* wait for tests to complete */
+    while( (ret = wait( &status )) > 0 )
+    {
+        log_debug( "reaped child - %d", ret );
+    }
+
+    if( errno != ECHILD )
+    {
+        log_debug( "error in wait() - %d", errno );
+        return 1;
+    }
+    return 0;
+}
+
+/*
+ * Control function for execution of the requested motif. 
+ */
+int 
+run_motif( struct motif_arguments *map, const int ordinal )
+{
+    log_debug( "child: ordinal %d", ordinal );
+
+#ifdef TODO
     /* Application setup and early configuration */
+    trace_init( map->trace_dir, ordinal );
     time_now( &time_start );
-    prng_select( motif_arguments.prng );
-    sample_select( motif_arguments.sample );
-    storage_select( motif_arguments.storage );
-    const int result = storage_create( motif_arguments.workspace );
+    prng_select( map->prng );
+    sample_select( map->sample );
+    storage_select( map->storage );
+    const int result = storage_create( map->workspace );
     if( result < 0 )
     {
         return -1;
@@ -187,5 +239,6 @@ int main( int argc, char *argv[] )
     /* Read back phase */
 
     storage_destroy( );
+#endif
     return 0;
 }
