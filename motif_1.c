@@ -27,6 +27,7 @@
 #include "storage.h"
 #include "utils.h"
 #include "info.h"
+#include "barrier.h"
 
 #define OBJ_COUNT 10
 #define STORAGE_WORKSPACE "motif_1-data" 
@@ -162,13 +163,14 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
 }
 
 static struct argp argp = { options, parse_opt, args_doc, prog_doc };
-int run_motif( struct motif_arguments *map, const int ordinal );
+int run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal );
 
 int main( int argc, char *argv[] )
 {
     uint32_t obj_id[OBJ_COUNT];
     struct motif_arguments motif_arguments;
     int status, ret;
+    barrier_t *bp;
 
     /* Set default argument values */
     motif_arguments.sample = 	 SAMPLE_DEBUG;
@@ -180,22 +182,24 @@ int main( int argc, char *argv[] )
 
     argp_parse( &argp, argc, argv, 0, 0, &motif_arguments );
 
-    log_debug( "sample = %d\n", motif_arguments.sample );
-    log_debug( "prng = %d\n", motif_arguments.prng );
-    log_debug( "storage = %d\n", motif_arguments.storage );
-    log_debug( "workspace = %s\n", motif_arguments.workspace );
-    log_debug( "trace_dir = %s\n", motif_arguments.trace_dir );
-    log_debug( "count = %d\n", motif_arguments.object_count );
-    log_debug( "task_count = %d\n", motif_arguments.task_count );
-    log_debug( "seed = %d\n", motif_arguments.seed );
+    log_debug( "sample = %d", motif_arguments.sample );
+    log_debug( "prng = %d", motif_arguments.prng );
+    log_debug( "storage = %d", motif_arguments.storage );
+    log_debug( "workspace = %s", motif_arguments.workspace );
+    log_debug( "trace_dir = %s", motif_arguments.trace_dir );
+    log_debug( "count = %d", motif_arguments.object_count );
+    log_debug( "task_count = %d", motif_arguments.task_count );
+    log_debug( "seed = %d", motif_arguments.seed );
+
+    bp = barrier_init( "motif_1", motif_arguments.task_count + 1 );
+    log_debug( "barrier = %p", bp );
 
     /* Spawn individual test tasks */
     for( int i=0; i < motif_arguments.task_count; i++ )
     {
         pid_t pid;
         if( (pid = fork()) == 0 ) {
-            log_debug("in child");
-            return( run_motif( &motif_arguments, i ) );
+            return( run_motif( &motif_arguments, bp, i ) );
         }
         if ( pid < 0 )
         {
@@ -203,6 +207,10 @@ int main( int argc, char *argv[] )
             return 1;
         }
     }
+
+    log_debug( "main waiting for barrier" );
+    barrier_wait( bp );
+    log_debug( "main passed barrier" );
 
     /* wait for tests to complete */
     while( (ret = wait( &status )) > 0 )
@@ -222,7 +230,7 @@ int main( int argc, char *argv[] )
  * Control function for execution of the requested motif. 
  */
 int 
-run_motif( struct motif_arguments *map, const int ordinal )
+run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
 {
     log_debug( "child: ordinal %d", ordinal );
 
@@ -234,6 +242,10 @@ run_motif( struct motif_arguments *map, const int ordinal )
         map->seed = now.tv_sec ^ now.tv_nsec;
         log_debug( "updating local seed in %d to %d", ordinal, map->seed );
     }
+
+    log_debug( "ord %d waiting for barrier", ordinal );
+    barrier_wait( bp );
+    log_debug( "ord %d passed barrier", ordinal );
 
 #ifdef TODO
     /* Application setup and early configuration */
