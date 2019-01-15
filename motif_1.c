@@ -50,6 +50,7 @@ application workload with the following characteristics:\n\n\
 static struct argp_option options[] = 
 {
     { "prng", 'r', "PRNG", 0, "Pseudo-random number generator to use" },
+    { "seed", 'R', "SEED", 0, "Pseudo-random number generator seed" },
     { "sample", 's', "SAMPLE", 0, "Sample type to use" },
     { "storage", 'S', "STORAGE", 0, "Storage type to use" } ,
     { "workspace", 'w', "WORKSPACE", 0, "Storage workspace to use" },
@@ -64,6 +65,7 @@ struct motif_arguments
 {
     sample_impl_t 	sample;		/* Sample used in test */
     prng_impl_t 	prng;		/* Random number generator */
+    int 		seed;		/* PRNG seed value */
     storage_impl_t	storage;	/* Storage selection */
     char		*trace_dir;	/* Directory for traces */
     char		*workspace;	/* Workspace pointer */
@@ -125,6 +127,11 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
                           possible_options( prng_impl_str, options ));
         break;
 
+    case 'R':
+        if ( (motif_arguments->seed = atoi( arg )) <= 0 ) 
+            argp_failure( state, 1, 0, "Seed must be greater than 0" );
+        break;
+
     case 's':
         if ( (motif_arguments->sample = find_match( sample_impl_str, arg ))  < 0)
             argp_failure( state, 1, 0, "Sample must be one of %s", 
@@ -180,6 +187,7 @@ int main( int argc, char *argv[] )
     log_debug( "trace_dir = %s\n", motif_arguments.trace_dir );
     log_debug( "count = %d\n", motif_arguments.object_count );
     log_debug( "task_count = %d\n", motif_arguments.task_count );
+    log_debug( "seed = %d\n", motif_arguments.seed );
 
     /* Spawn individual test tasks */
     for( int i=0; i < motif_arguments.task_count; i++ )
@@ -218,11 +226,23 @@ run_motif( struct motif_arguments *map, const int ordinal )
 {
     log_debug( "child: ordinal %d", ordinal );
 
+    /* randomize each task seed unless explicitly set on init */
+    if( map->seed == 0 ) 
+    {
+        struct timespec now;
+        time_now( &now );
+        map->seed = now.tv_sec ^ now.tv_nsec;
+        log_debug( "updating local seed in %d to %d", ordinal, map->seed );
+    }
+
 #ifdef TODO
     /* Application setup and early configuration */
     trace_init( map->trace_dir, ordinal );
     time_now( &time_start );
+
     prng_select( map->prng );
+    prng_t *p = prng_create( map->seed );
+
     sample_select( map->sample );
     storage_select( map->storage );
     const int result = storage_create( map->workspace );
