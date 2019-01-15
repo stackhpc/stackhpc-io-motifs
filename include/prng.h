@@ -35,6 +35,9 @@ typedef enum prng_impl
     PRNG_DEBUG,             /* Default */
     PRNG_XORSHIFT,          /* xor shift */
 } prng_impl_t;
+
+#define PRNG_IMPL_STR 	{ "DEBUG", "XORSHIFT", NULL }
+
 extern void prng_select( prng_impl_t impl );
 
 #endif                                                          /* __PRNG_H__ */
