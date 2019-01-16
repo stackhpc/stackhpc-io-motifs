@@ -20,7 +20,7 @@ typedef struct barrier {
     char		b_handle[];	/* handle to backing object */
 } barrier_t;
 
-barrier_t *barrier_init( const char *andle, const int count );
+barrier_t *barrier_init( const char *handle, const int count );
 void barrier_destroy( barrier_t *bp );
 void barrier_wait( barrier_t *bp );
 

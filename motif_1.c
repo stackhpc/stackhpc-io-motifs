@@ -72,6 +72,8 @@ struct motif_arguments
     char		*workspace;	/* Workspace pointer */
     int			object_count;	/* Number of objects */
     int			task_count;	/* Number of tasks */
+    char		**forward_argv; /* Forward arguments (handled downstream) */
+    int		        forward_argc;   /* Forward argument count */
 };
 
 /* Find matching ordinal for item in list */
@@ -153,8 +155,24 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
         motif_arguments->workspace = arg;
         break;
 
-    case ARGP_KEY_ARG: 
+    case ARGP_KEY_END: 
         return 0;
+
+    case ARGP_KEY_ARG:
+        motif_arguments->forward_argv[motif_arguments->forward_argc++] = arg;
+        return 0;
+
+    case ARGP_KEY_INIT:
+        /* Set default argument values */
+        motif_arguments->sample =	SAMPLE_DEBUG;
+        motif_arguments->prng = 	PRNG_DEBUG;
+        motif_arguments->storage = 	STORAGE_DEBUG;
+        motif_arguments->workspace = 	STORAGE_WORKSPACE;
+        motif_arguments->task_count =	1;
+        motif_arguments->trace_dir =	".";
+        motif_arguments->forward_argv =	malloc( sizeof( char * ) * state->argc );
+        motif_arguments->forward_argc = 0;
+        break;
 
     default: 
         return ARGP_ERR_UNKNOWN;
@@ -172,27 +190,25 @@ int main( int argc, char *argv[] )
     int status, ret;
     barrier_t *bp;
 
-    /* Set default argument values */
-    motif_arguments.sample = 	 SAMPLE_DEBUG;
-    motif_arguments.prng = 	 PRNG_DEBUG;
-    motif_arguments.storage = 	 STORAGE_DEBUG;
-    motif_arguments.workspace =  STORAGE_WORKSPACE;
-    motif_arguments.trace_dir =	 ".";
-    motif_arguments.task_count = 1;
-
     argp_parse( &argp, argc, argv, 0, 0, &motif_arguments );
 
-    log_debug( "sample = %d", motif_arguments.sample );
-    log_debug( "prng = %d", motif_arguments.prng );
-    log_debug( "storage = %d", motif_arguments.storage );
-    log_debug( "workspace = %s", motif_arguments.workspace );
-    log_debug( "trace_dir = %s", motif_arguments.trace_dir );
-    log_debug( "count = %d", motif_arguments.object_count );
-    log_debug( "task_count = %d", motif_arguments.task_count );
-    log_debug( "seed = %d", motif_arguments.seed );
+    log_debug( "Arguments:" );
+    log_debug( "  sample = %d", motif_arguments.sample );
+    log_debug( "  prng = %d", motif_arguments.prng );
+    log_debug( "  storage = %d", motif_arguments.storage );
+    log_debug( "  workspace = %s", motif_arguments.workspace );
+    log_debug( "  trace_dir = %s", motif_arguments.trace_dir );
+    log_debug( "  count = %d", motif_arguments.object_count );
+    log_debug( "  task_count = %d", motif_arguments.task_count );
+    log_debug( "  seed = %d", motif_arguments.seed );
 
-    bp = barrier_init( "motif_1", motif_arguments.task_count + 1 );
-    log_debug( "barrier = %p", bp );
+    log_debug( "  forward arguments:" );
+    for( int i=0; i<motif_arguments.forward_argc; i++)
+    {
+        log_debug( "    %s", motif_arguments.forward_argv[i] );
+    }
+
+    bp = barrier_init( "/motif_1", motif_arguments.task_count + 1 );
 
     /* Spawn individual test tasks */
     for( int i=0; i < motif_arguments.task_count; i++ )

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include "barrier.h"
 
 /* 
@@ -17,7 +18,7 @@ barrier_t *barrier_init( const char *handle, const int count )
 
     if ( (fd < 0) || ftruncate( fd, size_needed )) 
     {
-        return (void*)( -1 );
+        return NULL;
     }
 
     barrier_t *bp = mmap( NULL, size_needed, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0 );
@@ -37,7 +38,7 @@ barrier_t *barrier_init( const char *handle, const int count )
 /* Cleanup barrier resources */
 void barrier_destroy( barrier_t *bp )
 {
-    char handle[strlen( bp->b_handle )];
+    char handle[strlen( bp->b_handle ) + 1];
 
     strcpy( handle, bp->b_handle );
     sem_destroy( &bp->b_mutex );
