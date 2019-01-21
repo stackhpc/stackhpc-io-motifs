@@ -32,7 +32,7 @@ int main( int argc, char *argv[] )
     prng_select( PRNG_DEBUG );
     sample_select( SAMPLE_DEBUG );
     storage_select( STORAGE_DEBUG );
-    const int result = storage_create( STORAGE_WORKSPACE );
+    const int result = storage_create( STORAGE_WORKSPACE, argc, argv );
     if( result < 0 )
     {
         return -1;

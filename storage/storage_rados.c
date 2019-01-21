@@ -26,7 +26,7 @@ static char *storage_rados_ceph_conf = "ceph.conf";
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_rados_create( const char *workspace, int argc, const char *argv[] )
+static int storage_rados_create( const char *workspace, int argc, char *argv[] )
 {
 
     const int rados_err = rados_create( &storage_rados_data, NULL );
@@ -43,7 +43,7 @@ static int storage_rados_create( const char *workspace, int argc, const char *ar
         return conf_err;
     }
 
-    const int argv_err = rados_conf_parse_argv( storage_rados_data, argc, argv );
+    const int argv_err = rados_conf_parse_argv( storage_rados_data, argc, (const char **)argv );
     if( argv_err < 0 )
     {
         log_error( "Error parsing args for Ceph configuration: %s", strerror(-argv_err) );

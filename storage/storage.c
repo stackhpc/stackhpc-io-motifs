@@ -16,7 +16,7 @@ static storage_driver_t *storage = &storage_debug;
 /* storage implementation selector */
 void storage_select( storage_impl_t impl )
 {
-    static const struct { storage_impl_t impl; storage_driver_t *driver; } storage_drivers[] = 
+    static const struct { storage_impl_t impl; storage_driver_t *driver; } storage_drivers[] =
     {
         { STORAGE_DEBUG, &storage_debug },
         { STORAGE_DIRTREE, &storage_dirtree },
@@ -38,7 +38,7 @@ void storage_select( storage_impl_t impl )
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
 /* NOTE: must be called after the PRNG implementation has been selected */
-int storage_create( const char *workspace, int argc, const char *argv[] )
+int storage_create( const char *workspace, int argc, char *argv[] )
 {
     return storage->storage_create( workspace, argc, argv );
 }

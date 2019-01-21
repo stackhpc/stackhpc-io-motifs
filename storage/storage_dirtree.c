@@ -60,7 +60,7 @@ static int storage_dirtree_pathgen( const uint32_t client_id, const uint32_t obj
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_dirtree_create( const char *workspace, int argc, const char *argv[] )
+static int storage_dirtree_create( const char *workspace, int argc, char *argv[] )
 {
     struct stat st;
     const int st_result = stat( workspace, &st );

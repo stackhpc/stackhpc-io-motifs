@@ -32,7 +32,7 @@ static char storage_debug_cwd[PATH_MAX];
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_debug_create( const char *workspace, int argc, const char *argv[] )
+static int storage_debug_create( const char *workspace, int argc, char *argv[] )
 {
     struct stat st;
     const int st_result = stat( workspace, &st );

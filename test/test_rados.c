@@ -22,7 +22,7 @@
 #include "utils.h"
 
 #define OBJ_COUNT 1000
-#define STORAGE_WORKSPACE "motif_1-data" 
+#define STORAGE_WORKSPACE "motif_1-data"
 
 int main( int argc, char *argv[] )
 {
@@ -47,7 +47,7 @@ int main( int argc, char *argv[] )
 
     /* Read back phase */
 
-    const pid_t client_id = getpid(); 
+    const pid_t client_id = getpid();
     prng_t *P = prng_create( 42 );
     sample_t *S = sample_create( P );
 
