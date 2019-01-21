@@ -64,6 +64,8 @@ struct motif_arguments
     bool		trace;		/* Collect traces */
     char		*workspace;	/* Workspace pointer */
     int			object_count;	/* Number of objects */
+    char		**forward_argv; /* Forward arguments (handled downstream) */
+    int		        forward_argc;   /* Forward argument count */
 };
 
 /* Find matching ordinal for item in list */
@@ -134,8 +136,24 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
         motif_arguments->workspace = arg;
         break;
 
-    case ARGP_KEY_ARG: 
+    case ARGP_KEY_END: 
         return 0;
+
+    case ARGP_KEY_ARG:
+        log_debug("end arg: %s", arg);
+        motif_arguments->forward_argv[motif_arguments->forward_argc++] = arg;
+        return 0;
+
+    case ARGP_KEY_INIT:
+        /* Set default argument values */
+        motif_arguments->sample =	SAMPLE_DEBUG;
+        motif_arguments->prng = 	PRNG_DEBUG;
+        motif_arguments->storage = 	STORAGE_DEBUG;
+        motif_arguments->workspace = 	STORAGE_WORKSPACE;
+        motif_arguments->trace =	true;
+        motif_arguments->forward_argv =	malloc( sizeof( char * ) * state->argc );
+        motif_arguments->forward_argc = 0;
+        break;
 
     default: 
         return ARGP_ERR_UNKNOWN;
@@ -150,13 +168,6 @@ int main( int argc, char *argv[] )
     uint32_t obj_id[OBJ_COUNT];
     struct motif_arguments motif_arguments;
 
-    /* Set default argument values */
-    motif_arguments.sample = 	SAMPLE_DEBUG;
-    motif_arguments.prng = 	PRNG_DEBUG;
-    motif_arguments.storage = 	STORAGE_DEBUG;
-    motif_arguments.workspace = STORAGE_WORKSPACE;
-    motif_arguments.trace =	true;
-
     argp_parse( &argp, argc, argv, 0, 0, &motif_arguments );
 
     log_debug( "sample = %d\n", motif_arguments.sample );
@@ -165,6 +176,12 @@ int main( int argc, char *argv[] )
     log_debug( "workspace = %s\n", motif_arguments.workspace );
     log_debug( "trace = %d\n", motif_arguments.trace );
     log_debug( "count = %d\n", motif_arguments.object_count );
+
+    log_debug( "forward arguments:" );
+    for( int i=0; i<motif_arguments.forward_argc; i++)
+    {
+        log_debug( "\t%s", motif_arguments.forward_argv[i] );
+    }
 
     exit(1);
 
