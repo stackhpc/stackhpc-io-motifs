@@ -11,7 +11,7 @@ typedef struct
     /* Set up a storage driver on application startup */
     /* For file-based storage implementations, the workspace is a directory pathname */
     /* NOTE: must be called after the PRNG implementation has been selected */
-    int (*storage_create)( const char *workspace );
+    int (*storage_create)( const char *workspace, int argc, const char *argv[] );
 
     /* Cleanup state from a storage driver on application shutdown */
     int (*storage_destroy)( void );
@@ -27,5 +27,6 @@ typedef struct
 /* Storage driver implementations */
 extern storage_driver_t storage_debug;
 extern storage_driver_t storage_dirtree;
+extern storage_driver_t storage_rados;
 
 #endif                                                          /* __STORAGE_PRIV_H__ */

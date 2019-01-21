@@ -20,6 +20,7 @@ void storage_select( storage_impl_t impl )
     {
         { STORAGE_DEBUG, &storage_debug },
         { STORAGE_DIRTREE, &storage_dirtree },
+        { STORAGE_RADOS, &storage_rados },
     };
 
     for( unsigned i=0; i < ARRAYLEN(storage_drivers); i++ )
@@ -37,9 +38,9 @@ void storage_select( storage_impl_t impl )
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
 /* NOTE: must be called after the PRNG implementation has been selected */
-int storage_create( const char *workspace )
+int storage_create( const char *workspace, int argc, const char *argv[] )
 {
-    return storage->storage_create( workspace );
+    return storage->storage_create( workspace, argc, argv );
 }
 
 /* Cleanup state from a storage driver on application shutdown */

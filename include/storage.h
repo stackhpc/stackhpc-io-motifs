@@ -14,7 +14,7 @@
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
 /* NOTE: must be called after the PRNG implementation has been selected */
-extern int storage_create( const char *workspace );
+extern int storage_create( const char *workspace, int argc, const char *argv[] );
 
 /* Cleanup state from a storage driver on application shutdown */
 extern int storage_destroy( void );
@@ -31,6 +31,7 @@ typedef enum storage_impl
 {
     STORAGE_DEBUG,             /* Default */
     STORAGE_DIRTREE,
+    STORAGE_RADOS,
 } storage_impl_t;
 
 #define STORAGE_IMPL_STR 	{ "DEBUG", "DIRTREE", NULL }
