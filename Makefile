@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g -std=c99
 CPPFLAGS = -Iinclude -D_POSIX_C_SOURCE=200809L
-LDFLAGS =
+LDFLAGS = -lrt
 LIBS = -lrados -lpthread -lm
 
 MAJOR = 0
@@ -14,7 +14,7 @@ CPPFLAGS += -DVERSION=$(VERSION)
 COMMON_SRCS = prng/prng.c prng/prng_debug.c prng/prng_xorshift.c \
               sample/sample.c sample/sample_debug.c \
               storage/storage.c storage/storage_debug.c storage/storage_dirtree.c storage/storage_rados.c \
-              log/log.c utils/time.c utils/trace.c
+              log/log.c utils/time.c utils/trace.c utils/barrier.c
 
 UTILS = utils/tracefmt
 
