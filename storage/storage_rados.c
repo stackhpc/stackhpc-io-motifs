@@ -2,7 +2,7 @@
 /* Storage and retrieval of pseudo-random sample objects.
  * Write an object (with a pre-determined filename) to storage. 
  * Read back an object for subsequent validation. */
-/* Begun 2018-2019, StackHPC Ltd */
+/* Begun 2019, StackHPC Ltd */
 
 #include <stdint.h>
 #include <string.h>
