@@ -67,6 +67,7 @@ static int storage_rados_create( const char *workspace, int argc, char *argv[] )
         return ioctx_err;
     }
 
+    log_info( "Connected to Ceph cluster, pool %s", storage_rados_pool );
     return 0;
 }
 

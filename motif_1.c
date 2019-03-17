@@ -29,7 +29,6 @@
 #include "info.h"
 #include "barrier.h"
 
-#define OBJ_COUNT 10
 #define STORAGE_WORKSPACE "motif_1-data" 
 
 const char *argp_program_version = VERSION;
@@ -54,26 +53,30 @@ static struct argp_option options[] =
     { "seed", 'R', "SEED", 0, "Pseudo-random number generator seed" },
     { "sample", 's', "SAMPLE", 0, "Sample type to use" },
     { "storage", 'S', "STORAGE", 0, "Storage type to use" } ,
-    { "workspace", 'w', "WORKSPACE", 0, "Storage workspace to use" },
+    { "workspace", 'W', "WORKSPACE", 0, "Storage workspace to use" },
     { "tracedir", 't', "TRACEDIR", 0, "Directory for traces" },
-    { "count", 'c', "OBJECT COUNT", 0, "Object count" },
+    { "write count", 'c', "OBJECT WRITE COUNT", 0, "Object write count" },
+    { "read count", 'n', "OBJECT READ COUNT", 0, "Object read count" },
     { "parallel", 'p', "TASK COUNT", 0, "Number of parallel tasks" },
+    { "verbose", 'v', "VERBOSITY", 0, "Verbosity level" },
     { 0 }
 };
 
 /* State structure for motif_1 command arguments */
 struct motif_arguments
 {
-    sample_impl_t 	sample;		/* Sample used in test */
-    prng_impl_t 	prng;		/* Random number generator */
-    int 		seed;		/* PRNG seed value */
-    storage_impl_t	storage;	/* Storage selection */
-    char		*trace_dir;	/* Directory for traces */
-    char		*workspace;	/* Workspace pointer */
-    int			object_count;	/* Number of objects */
-    int			task_count;	/* Number of tasks */
-    char		**forward_argv; /* Forward arguments (handled downstream) */
-    int		        forward_argc;   /* Forward argument count */
+    sample_impl_t 	sample;		    /* Sample used in test */
+    prng_impl_t 	prng;		    /* Random number generator */
+    int 		seed;		    /* PRNG seed value */
+    storage_impl_t	storage;	    /* Storage selection */
+    log_level_t         verbosity;          /* Logging verbosity level */
+    char		*trace_dir;	    /* Directory for traces */
+    char		*workspace;	    /* Workspace pointer */
+    unsigned		object_write_count; /* Number of objects */
+    unsigned		object_read_count;  /* Number of objects */
+    int			task_count;	    /* Number of tasks */
+    char		**forward_argv;     /* Forward arguments (handled downstream) */
+    int		        forward_argc;       /* Forward argument count */
 };
 
 /* Find matching ordinal for item in list */
@@ -110,12 +113,18 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
     char *storage_impl_str[] = 	STORAGE_IMPL_STR;
     char *prng_impl_str[] = 	PRNG_IMPL_STR;
     char *sample_impl_str[] = 	SAMPLE_IMPL_STR;
+    char *log_level_str[] =     LOG_LEVEL_STR;
     char options[PATH_MAX];
 
     switch (key) {
     case 'c':
-        if ( (motif_arguments->object_count = atoi( arg )) <= 0 ) 
-            argp_failure( state, 1, 0, "Count must be greater than 0" );
+        if ( (motif_arguments->object_write_count = atoi( arg )) <= 0 ) 
+            argp_failure( state, 1, 0, "Write count must be greater than 0" );
+        break;
+
+    case 'n':
+        if ( (motif_arguments->object_read_count = atoi( arg )) <= 0 ) 
+            argp_failure( state, 1, 0, "Read count must be greater than 0" );
         break;
 
     case 'p':
@@ -147,11 +156,17 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
                           possible_options( storage_impl_str, options ));
         break;
 
+    case 'v':
+        if ( (motif_arguments->verbosity = find_match( log_level_str, arg ))  < 0)
+            argp_failure( state, 1, 0, "Verbosity must be one of %s", 
+                          possible_options( log_level_str, options ));
+        break;
+
     case 't':
         motif_arguments->trace_dir = arg;
         break;
 
-    case 'w':
+    case 'W':
         motif_arguments->workspace = arg;
         break;
 
@@ -167,6 +182,7 @@ static error_t parse_opt( int key, char *arg, struct argp_state *state )
         motif_arguments->sample =	SAMPLE_DEBUG;
         motif_arguments->prng = 	PRNG_DEBUG;
         motif_arguments->storage = 	STORAGE_DEBUG;
+        motif_arguments->verbosity =    LOG_DEBUG;
         motif_arguments->workspace = 	STORAGE_WORKSPACE;
         motif_arguments->task_count =	1;
         motif_arguments->trace_dir =	".";
@@ -185,12 +201,14 @@ int run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal );
 
 int main( int argc, char *argv[] )
 {
-    uint32_t obj_id[OBJ_COUNT];
     struct motif_arguments motif_arguments;
     int status, ret;
     barrier_t *bp;
 
+    time_now( &time_start );
     argp_parse( &argp, argc, argv, 0, 0, &motif_arguments );
+
+    log_set_level( motif_arguments.verbosity );
 
     log_debug( "Arguments:" );
     log_debug( "  sample = %d", motif_arguments.sample );
@@ -198,7 +216,8 @@ int main( int argc, char *argv[] )
     log_debug( "  storage = %d", motif_arguments.storage );
     log_debug( "  workspace = %s", motif_arguments.workspace );
     log_debug( "  trace_dir = %s", motif_arguments.trace_dir );
-    log_debug( "  count = %d", motif_arguments.object_count );
+    log_debug( "  write count = %d", motif_arguments.object_write_count );
+    log_debug( "  read count = %d", motif_arguments.object_read_count );
     log_debug( "  task_count = %d", motif_arguments.task_count );
     log_debug( "  seed = %d", motif_arguments.seed );
 
@@ -207,6 +226,9 @@ int main( int argc, char *argv[] )
     {
         log_debug( "    %s", motif_arguments.forward_argv[i] );
     }
+
+    sample_select( motif_arguments.sample );
+    storage_select( motif_arguments.storage );
 
     bp = barrier_init( "/motif_1", motif_arguments.task_count + 1 );
 
@@ -248,6 +270,9 @@ int main( int argc, char *argv[] )
 int 
 run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
 {
+    uint32_t *obj_id;
+    struct timespec ts_read, ts_write, ts_delta;
+
     log_debug( "child: ordinal %d", ordinal );
 
     /* randomize each task seed unless explicitly set on init */
@@ -263,17 +288,20 @@ run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
     barrier_wait( bp );
     log_debug( "ord %d passed barrier", ordinal );
 
-#ifdef TODO
+    obj_id = malloc( map->object_write_count * sizeof(uint32_t) );
+    if( obj_id == NULL )
+    {
+        log_error( "Could not alloc seed vector for %u objects", map->object_write_count );
+        return -1;
+    }
+
     /* Application setup and early configuration */
     trace_init( map->trace_dir, ordinal );
-    time_now( &time_start );
-
     prng_select( map->prng );
-    prng_t *p = prng_create( map->seed );
+    prng_t *P = prng_create( map->seed );
+    sample_t *S = sample_create( P );
 
-    sample_select( map->sample );
-    storage_select( map->storage );
-    const int result = storage_create( map->workspace );
+    const int result = storage_create( map->workspace, map->forward_argc, map->forward_argv );
     if( result < 0 )
     {
         return -1;
@@ -283,10 +311,39 @@ run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
     time_now( &time_benchmark );
 
     /* Write out phase */
+    for( unsigned i=0; i < map->object_write_count; i++ )
+    {
+        obj_id[i] = prng_peek(P);
+        sample_init( S, P );
+        storage_write( ordinal, obj_id[i], S );
+    }
+
+    time_now( &ts_write );
+    time_delta( &time_benchmark, &ts_write, &ts_delta );
+    const float writes_per_sec = (float)map->object_write_count / ((float)ts_delta.tv_sec + (float)ts_delta.tv_nsec / 1000000000.0);
+    log_info( "Wrote %u objects in %ld.%03lds = %g objects/second", map->object_write_count,
+            ts_delta.tv_sec, ts_delta.tv_nsec / 1000000l, writes_per_sec );
+
 
     /* Read back phase */
+    prng_init( P, map->seed );
+    for( unsigned i=0; i < map->object_read_count; i++ )
+    {
+        const unsigned obj_idx = i % map->object_write_count;           /* FIXME: randomise selection? */
+        prng_init( P, obj_id[obj_idx] );
+        storage_read( ordinal, obj_id[obj_idx], S );
+        if( !sample_valid( S, P ) )
+        {
+            log_error( "Object %d is not valid", obj_idx );
+        }
+    }
+
+    time_now( &ts_read );
+    time_delta( &ts_write, &ts_read, &ts_delta );
+    const float reads_per_sec = (float)map->object_read_count / ((float)ts_delta.tv_sec + (float)ts_delta.tv_nsec / 1000000000.0);
+    log_info( "Read %u objects in %ld.%03lds = %g objects/second", map->object_read_count,
+            ts_delta.tv_sec, ts_delta.tv_nsec / 1000000l, reads_per_sec );
 
     storage_destroy( );
-#endif
     return 0;
 }

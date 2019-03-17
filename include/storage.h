@@ -34,7 +34,7 @@ typedef enum storage_impl
     STORAGE_RADOS,
 } storage_impl_t;
 
-#define STORAGE_IMPL_STR 	{ "DEBUG", "DIRTREE", NULL }
+#define STORAGE_IMPL_STR 	{ "DEBUG", "DIRTREE", "RADOS", NULL }
 
 extern void storage_select( storage_impl_t impl );
 

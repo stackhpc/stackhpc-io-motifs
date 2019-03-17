@@ -15,7 +15,9 @@
 
 typedef void (*log_LockFn)(void *udata, int lock);
 
-enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
+typedef enum { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL } log_level_t;
+
+#define LOG_LEVEL_STR 	{ "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", NULL }
 
 #define log_trace(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
 #define log_debug(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
