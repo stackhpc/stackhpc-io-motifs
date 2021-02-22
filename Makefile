@@ -28,6 +28,14 @@ MOTIF_1_OBJS = $(MOTIF_1_SRCS:%.c=%.o)
 motif_1: $(MOTIF_1_OBJS) $(COMMON_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(MOTIF_1_OBJS) $(COMMON_OBJS) $(LIBS)
 
+
+TRACE_READ_SRCS = trace_read.c
+TRACE_READ_OBJS = $(TRACE_READ_SRCS:%.c=%.o)
+
+trace_read: $(TRACE_READ_OBJS) $(COMMON_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(TRACE_READ_OBJS) $(COMMON_OBJS) $(LIBS)
+
+
 tests: $(TESTS)
 
 test/test_log test/test_prng test/test_trace test/test_sample test/test_storage test/test_rados: $(COMMON_OBJS)

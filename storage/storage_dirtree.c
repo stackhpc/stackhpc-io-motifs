@@ -60,7 +60,7 @@ static int storage_dirtree_pathgen( const uint32_t client_id, const uint32_t obj
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_dirtree_create( const char *workspace, int argc, char *argv[] )
+static int storage_dirtree_driver_create( const char *workspace, int argc, char *argv[] )
 {
     struct stat st;
     const int st_result = stat( workspace, &st );
@@ -71,14 +71,20 @@ static int storage_dirtree_create( const char *workspace, int argc, char *argv[]
             log_error( "Couldn't stat %s: %s", workspace, strerror(errno) );
             return -1;
         }
+
+	const int mkdir_result = mkdir( workspace, 0755 );
+	if( mkdir_result < 0 )
+	{
+	    log_error( "Workspace %s could not be created: %s", workspace, strerror(errno) );
+	    return -1;
+	}
     }
     else
     {
-        log_error( "Workspace %s already exists: cannot proceed", workspace );
-        return -1;
+        log_warn( "Workspace %s already exists: performance results may be affected", workspace );
     }
 
-    /* Prepare the workspace */
+    /* Copy the workspace detail (test master) */
     assert( storage_dirtree_workspace == NULL );
     storage_dirtree_workspace = strndup( workspace, PATH_MAX );
     if( storage_dirtree_workspace == NULL )
@@ -86,15 +92,15 @@ static int storage_dirtree_create( const char *workspace, int argc, char *argv[]
         log_error( "Insufficient memory to alloc state for workspace %s", workspace );
         return -1;
     }
-    const int mkdir_result = mkdir( workspace, 0755 );
-    if( mkdir_result < 0 )
-    {
-        log_error( "Workspace %s could not be created: %s", workspace, strerror(errno) );
-        free( storage_dirtree_workspace );
-        storage_dirtree_workspace = NULL;
-        return -1;
-    }
+    getcwd( storage_dirtree_cwd, sizeof(storage_dirtree_cwd) );
 
+    return 0;
+}
+
+/* Set up a storage driver on application startup */
+/* For file-based storage implementations, the workspace is a directory pathname */
+static int storage_dirtree_worker_create( const char *workspace, int argc, char *argv[] )
+{
     /* Change directory into the workspace */
     getcwd( storage_dirtree_cwd, sizeof(storage_dirtree_cwd) );
     log_trace( "Entering workspace %s", storage_dirtree_workspace );
@@ -113,6 +119,7 @@ static int storage_dirtree_create( const char *workspace, int argc, char *argv[]
 }
 
 
+/* Remove all files in the current working directory - use with caution! */
 static void storage_dirtree_rmdir( void )
 {
     /* Erase all files in the directory */
@@ -137,7 +144,14 @@ static void storage_dirtree_rmdir( void )
 
             if( S_ISREG(st.st_mode) )
             {
-                //log_trace( "Removing object %s", obj->d_name );
+		/* Paranoia */
+		unsigned id1, id2;
+		if( sscanf( obj->d_name, "%08X-%08X", &id1, &id2 ) != 2 )
+		{
+		    log_error( "Found non-matching filename %s, aborting", obj->d_name );
+		    abort( );
+		}
+                log_trace( "Removing object %s", obj->d_name );
                 unlink( obj->d_name );
             }
             if( S_ISDIR(st.st_mode) )
@@ -158,11 +172,21 @@ static void storage_dirtree_rmdir( void )
 }
 
 /* Cleanup state from a storage driver on application shutdown */
-static int storage_dirtree_destroy( void )
+static int storage_dirtree_driver_destroy( void )
 {
     /* Deallocate the workspace (this might take a while...) */
     if( storage_dirtree_workspace != NULL )
     {
+	const int chdir_result = chdir( storage_dirtree_workspace );
+	if( chdir_result < 0 )
+	{
+	    log_error( "Workspace %s could not be entered: %s",
+			storage_dirtree_workspace, strerror(errno) );
+	    free( storage_dirtree_workspace );
+	    storage_dirtree_workspace = NULL;
+	    return -1;
+	}
+
         /* Recursively remove files and directories in the workspace */
         storage_dirtree_rmdir( );
 
@@ -177,6 +201,12 @@ static int storage_dirtree_destroy( void )
         free( storage_dirtree_workspace );
         storage_dirtree_workspace = NULL;
     }
+    return 0;
+}
+
+static int storage_dirtree_worker_destroy( void )
+{
+    /* No action by the worker */
     return 0;
 }
 
@@ -278,8 +308,10 @@ static int storage_dirtree_read( const uint32_t client_id, const uint32_t obj_id
 
 storage_driver_t storage_dirtree = 
 {
-    .storage_create = storage_dirtree_create,
-    .storage_destroy = storage_dirtree_destroy,
+    .storage_driver_create = storage_dirtree_driver_create,
+    .storage_worker_create = storage_dirtree_worker_create,
+    .storage_driver_destroy = storage_dirtree_driver_destroy,
+    .storage_worker_destroy = storage_dirtree_worker_destroy,
     .storage_write = storage_dirtree_write,
     .storage_read = storage_dirtree_read,
 };

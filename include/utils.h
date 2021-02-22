@@ -58,6 +58,8 @@ typedef struct trace_entry {
     struct timespec duration;	/* duration of operation */
 } trace_entry_t;
 
+extern const char *trace_type_str( const trace_type_t T );
+
 /* A pthread is created by this task for periodic flush of buffered trace data */
 extern int trace_init( const char *trace_dir, const uint32_t trace_id );
 

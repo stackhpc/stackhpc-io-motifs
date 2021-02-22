@@ -32,7 +32,7 @@ static char storage_debug_cwd[PATH_MAX];
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_debug_create( const char *workspace, int argc, char *argv[] )
+static int storage_debug_driver_create( const char *workspace, int argc, char *argv[] )
 {
     struct stat st;
     const int st_result = stat( workspace, &st );
@@ -43,11 +43,17 @@ static int storage_debug_create( const char *workspace, int argc, char *argv[] )
             log_error( "Couldn't stat %s: %s", workspace, strerror(errno) );
             return -1;
         }
+
+	const int mkdir_result = mkdir( workspace, 0755 );
+	if( mkdir_result < 0 )
+	{
+	    log_error( "Workspace %s could not be created: %s", workspace, strerror(errno) );
+	    return -1;
+	}
     }
     else
     {
-        log_error( "Workspace %s already exists: cannot proceed", workspace );
-        return -1;
+        log_warn( "Workspace %s already exists: performance results may be impacted", workspace );
     }
 
     /* Prepare the workspace */
@@ -58,17 +64,20 @@ static int storage_debug_create( const char *workspace, int argc, char *argv[] )
         log_error( "Insufficient memory to alloc state for workspace %s", workspace );
         return -1;
     }
-    const int mkdir_result = mkdir( workspace, 0755 );
-    if( mkdir_result < 0 )
-    {
-        log_error( "Workspace %s could not be created: %s", workspace, strerror(errno) );
-        free( storage_debug_workspace );
-        storage_debug_workspace = NULL;
-        return -1;
-    }
+
+    /* Allocate a PRNG object for use in generating files */
+    getcwd( storage_debug_cwd, sizeof(storage_debug_cwd) );
+    return 0;
+}
+
+/* Set up a storage driver on application startup */
+/* For file-based storage implementations, the workspace is a directory pathname */
+static int storage_debug_worker_create( const char *workspace, int argc, char *argv[] )
+{
+    assert( storage_debug_workspace != NULL );
+    assert( strlen(storage_debug_cwd) > 0 );
 
     /* Change directory into the workspace */
-    getcwd( storage_debug_cwd, sizeof(storage_debug_cwd) );
     log_trace( "Entering workspace %s", storage_debug_workspace );
     const int chdir_result = chdir( storage_debug_workspace );
     if( chdir_result < 0 )
@@ -85,11 +94,13 @@ static int storage_debug_create( const char *workspace, int argc, char *argv[] )
 }
 
 /* Cleanup state from a storage driver on application shutdown */
-static int storage_debug_destroy( void )
+static int storage_debug_driver_destroy( void )
 {
     /* Deallocate the workspace (this might take a while...) */
     if( storage_debug_workspace != NULL )
     {
+        chdir( storage_debug_workspace );
+
         /* Erase all files in the directory */
         DIR *D = opendir( "." );
         if( D != NULL )
@@ -107,6 +118,13 @@ static int storage_debug_destroy( void )
 
                 if( S_ISREG(st.st_mode) )
                 {
+		    unsigned val1, val2;
+		    if( sscanf(obj->d_name, "%08x-%08x", &val1, &val2) != 2 )
+		    {	
+			log_error( "Unrecognised file %s in workspace, aborting!", obj->d_name );
+			abort();
+		    }
+
                     log_trace( "Removing object %s", obj->d_name );
                     unlink( obj->d_name );
                 }
@@ -116,7 +134,7 @@ static int storage_debug_destroy( void )
 
         log_trace( "Returning to %s", storage_debug_cwd );
         chdir( storage_debug_cwd );
-        /* FIXME: we need to empty the directory first - this won't work */
+
         const int rmdir_result = rmdir( storage_debug_workspace );
         if( rmdir_result < 0 )
         {
@@ -125,6 +143,13 @@ static int storage_debug_destroy( void )
         free( storage_debug_workspace );
         storage_debug_workspace = NULL;
     }
+    return 0;
+}
+
+/* Cleanup state from a storage driver on application shutdown */
+static int storage_debug_worker_destroy( void )
+{
+    /* No cleanup action taken by the worker processes */
     return 0;
 }
 
@@ -219,8 +244,10 @@ static int storage_debug_read( const uint32_t client_id, const uint32_t obj_id, 
 
 storage_driver_t storage_debug = 
 {
-    .storage_create = storage_debug_create,
-    .storage_destroy = storage_debug_destroy,
+    .storage_driver_create = storage_debug_driver_create,
+    .storage_worker_create = storage_debug_worker_create,
+    .storage_driver_destroy = storage_debug_driver_destroy,
+    .storage_worker_destroy = storage_debug_worker_destroy,
     .storage_write = storage_debug_write,
     .storage_read = storage_debug_read,
 };

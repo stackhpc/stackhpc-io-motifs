@@ -26,7 +26,12 @@ static char *storage_rados_ceph_conf = "ceph.conf";
 
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
-static int storage_rados_create( const char *workspace, int argc, char *argv[] )
+static int storage_rados_driver_create( const char *workspace, int argc, char *argv[] )
+{
+    return 0;
+}
+
+static int storage_rados_worker_create( const char *workspace, int argc, char *argv[] )
 {
 
     const int rados_err = rados_create( &storage_rados_data, NULL );
@@ -71,8 +76,14 @@ static int storage_rados_create( const char *workspace, int argc, char *argv[] )
     return 0;
 }
 
-/* Cleanup state from a storage driver on application shutdown */
-static int storage_rados_destroy( void )
+/* Cleanup state from a storage master process on application shutdown */
+static int storage_rados_driver_destroy( void )
+{
+    return 0;
+}
+
+/* Cleanup state from a storage worker process on application shutdown */
+static int storage_rados_worker_destroy( void )
 {
     rados_ioctx_destroy( storage_rados_ctx );
     rados_shutdown( storage_rados_data ); 
@@ -140,8 +151,10 @@ static int storage_rados_read( const uint32_t client_id, const uint32_t obj_id, 
 
 storage_driver_t storage_rados = 
 {
-    .storage_create = storage_rados_create,
-    .storage_destroy = storage_rados_destroy,
+    .storage_driver_create = storage_rados_driver_create,
+    .storage_worker_create = storage_rados_worker_create,
+    .storage_driver_destroy = storage_rados_driver_destroy,
+    .storage_worker_destroy = storage_rados_worker_destroy,
     .storage_write = storage_rados_write,
     .storage_read = storage_rados_read,
 };

@@ -38,15 +38,26 @@ void storage_select( storage_impl_t impl )
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
 /* NOTE: must be called after the PRNG implementation has been selected */
-int storage_create( const char *workspace, int argc, char *argv[] )
+int storage_driver_create( const char *workspace, int argc, char *argv[] )
 {
-    return storage->storage_create( workspace, argc, argv );
+    return storage->storage_driver_create( workspace, argc, argv );
+}
+
+int storage_worker_create( const char *workspace, int argc, char *argv[] )
+{
+    return storage->storage_worker_create( workspace, argc, argv );
 }
 
 /* Cleanup state from a storage driver on application shutdown */
-int storage_destroy( void )
+int storage_driver_destroy( void )
 {
-    return storage->storage_destroy( );
+    return storage->storage_driver_destroy( );
+}
+
+/* Cleanup state from a storage driver on application shutdown */
+int storage_worker_destroy( void )
+{
+    return storage->storage_worker_destroy( );
 }
 
 /* Write a sample object to storage */

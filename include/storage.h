@@ -14,10 +14,12 @@
 /* Set up a storage driver on application startup */
 /* For file-based storage implementations, the workspace is a directory pathname */
 /* NOTE: must be called after the PRNG implementation has been selected */
-extern int storage_create( const char *workspace, int argc, char *argv[] );
+extern int storage_driver_create( const char *workspace, int argc, char *argv[] );
+extern int storage_worker_create( const char *workspace, int argc, char *argv[] );
 
 /* Cleanup state from a storage driver on application shutdown */
-extern int storage_destroy( void );
+extern int storage_driver_destroy( void );
+extern int storage_worker_destroy( void );
 
 /* Write a sample object to storage */
 extern int storage_write( const uint32_t client_id, const uint32_t obj_id, sample_t *S );

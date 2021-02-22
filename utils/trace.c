@@ -60,6 +60,21 @@ static pthread_cond_t  trace_cond        = PTHREAD_COND_INITIALIZER;
 
 void *trace_sync ( void );	/* Flush thread */
 
+const char *trace_type_str( const trace_type_t T )
+{
+    static const struct { trace_type_t T; const char *str; } table[] =
+    {
+	{ TRACE_READ, "READ" },
+	{ TRACE_WRITE, "WRITE" },
+	{ TRACE_MISC, "MISC" },
+    };
+    for( unsigned i=0; i < ARRAYLEN(table); i++ )
+    {
+	if( table[i].T == T )	return table[i].str;
+    }
+    return "????";
+}
+
 /* 
  * Initialize trace state. This includes creation of trace log file and 
  * spawn of trace buffer flush thread.

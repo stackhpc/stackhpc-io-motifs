@@ -230,6 +230,15 @@ int main( int argc, char *argv[] )
     sample_select( motif_arguments.sample );
     storage_select( motif_arguments.storage );
 
+
+    const int result = storage_driver_create( motif_arguments.workspace,
+	    				      motif_arguments.forward_argc,
+					      motif_arguments.forward_argv );
+    if( result < 0 )
+    {
+        return -1;
+    }
+
     bp = barrier_init( "/motif_1", motif_arguments.task_count + 1 );
 
     /* Spawn individual test tasks */
@@ -261,6 +270,8 @@ int main( int argc, char *argv[] )
         log_debug( "error in wait() - %d", errno );
         return 1;
     }
+
+    storage_driver_destroy( );
     return 0;
 }
 
@@ -301,7 +312,7 @@ run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
     prng_t *P = prng_create( map->seed );
     sample_t *S = sample_create( P );
 
-    const int result = storage_create( map->workspace, map->forward_argc, map->forward_argv );
+    const int result = storage_worker_create( map->workspace, map->forward_argc, map->forward_argv );
     if( result < 0 )
     {
         return -1;
@@ -344,6 +355,7 @@ run_motif( struct motif_arguments *map, barrier_t *bp, const int ordinal )
     log_info( "Read %u objects in %ld.%03lds = %g objects/second", map->object_read_count,
             ts_delta.tv_sec, ts_delta.tv_nsec / 1000000l, reads_per_sec );
 
-    storage_destroy( );
+    trace_fini( );
+    storage_worker_destroy( );
     return 0;
 }
